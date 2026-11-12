@@ -32,7 +32,7 @@ Application Flutter (Android + web + Windows) pour gérer **sa bibliothèque** (
 
 ## Environnement (Windows)
 - Flutter : `C:\Users\benja\Documents\flutter` (les scripts l'ajoutent au PATH si besoin).
-- `lancer.bat` : lance l'appli (Chrome sur http://localhost:8081, Windows ou Android). Le port est fixe pour garder les données saisies dans le navigateur.
+- `lancer.bat` : lance l'appli **directement dans Chrome** sur http://localhost:8081, sans question. Le port est fixe pour garder les données saisies dans le navigateur (la base IndexedDB est propre à l'adresse). `lancer.bat windows` ou `lancer.bat android` pour les autres cibles.
 - `verifier.bat` : analyse + tests → `verification.log`.
 - Aperçu dans le navigateur intégré de Claude : `flutter build web` puis `node outils/servir_web.js 8082` (http://localhost:8082). L'outil d'aperçu de l'app lit la config d'ODV : lancer le serveur en tâche de fond et ouvrir l'URL.
 - L'appli Windows nécessite le « Mode développeur » de Windows (liens symboliques des plugins) : `start ms-settings:developers`.

@@ -9,5 +9,5 @@ Gérer sa **bibliothèque** et sa **cave à vin**.
 Recherche sans accents et filtres dans les deux listes. Les données sont enregistrées dans une base de données locale, sur l'appareil (fichier sur téléphone et PC, IndexedDB dans le navigateur).
 
 ## Utilisation
-- `lancer.bat` : lance l'application (navigateur, Windows ou téléphone Android).
+- `lancer.bat` : ouvre directement l'application dans le navigateur (Chrome). Pour les autres versions : `lancer.bat windows` ou `lancer.bat android`.
 - `verifier.bat` : vérifie le code et lance les tests (résultat dans `verification.log`).
