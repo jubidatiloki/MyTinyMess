@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash outils/verifier_hook.sh",
+            "timeout": 300,
+            "statusMessage": "Analyse et tests Flutter…"
+          }
+        ]
+      }
+    ]
+  }
+}

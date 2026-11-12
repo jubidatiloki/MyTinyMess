@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Garde-fou git : refuse le commit si l'analyse ou les tests échouent.
+export PATH="/c/Users/benja/Documents/flutter/bin:$PATH"
+echo "Analyse et tests avant le commit..."
+flutter analyze --no-pub || { echo "Commit refusé : flutter analyze a trouvé des problèmes."; exit 1; }
+flutter test --no-pub || { echo "Commit refusé : des tests échouent."; exit 1; }
