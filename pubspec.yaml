@@ -1,7 +1,7 @@
 name: my_tiny_mess
-description: "A new Flutter project."
+description: "Gérer sa bibliothèque et sa cave à vin."
 publish_to: 'none'
-version: 0.1.0
+version: 0.2.0
 
 environment:
   sdk: ^3.10.4
@@ -21,3 +21,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/

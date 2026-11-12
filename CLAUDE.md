@@ -10,7 +10,12 @@ Application Flutter (Android + web + Windows) pour gérer **sa bibliothèque** (
 - Git : un garde-fou (`outils/pre-commit`, activé par `git config core.hooksPath outils`) refuse un commit si l'analyse ou les tests échouent. Committer seulement quand l'utilisateur le demande.
 
 ## Architecture (`lib/`)
-- `main.dart` (stockage sur l'appareil) → `app.dart` (`MyTinyMessApp`, thème bordeaux clair/sombre, français) → `screens/accueil_screen.dart` (onglets Bibliothèque / Cave).
+- `main.dart` (stockage sur l'appareil, préférences chargées avant l'affichage) → `app.dart` (`MyTinyMessApp`, thème selon les préférences, français) → `screens/racine_screen.dart` (affiche la rubrique choisie dans le menu latéral `widgets/menu_lateral.dart`).
+- `theme.dart` : palette `Couleurs` (vert `#4A9D60` des barres et du menu, fond `#454545` en sombre, `#F2F2F2` en clair) et `construireTheme`. **Sombre par défaut.**
+- `version.dart` : `kVersionApp`, toujours en phase avec `version:` de `pubspec.yaml` (affichée en bas du menu et dans « À propos »).
+- `models/section.dart` : rubriques du menu (Vue d'ensemble, Ma bibliothèque, Ma cave, Mon bazar, Contact, Préférences, À propos). Mon bazar et Contact sont encore des pages « Bientôt disponible » (`screens/pages_simples.dart`).
+- `screens/tableau_de_bord_screen.dart` : Vue d'ensemble, tuiles `TuileCompteur` (photo `assets/images/bibliotheque.jpg` / `cave.jpg`, dégradé + icône si absente).
+- `state/preferences_controller.dart` + `screens/preferences_screen.dart` : thème (sombre / clair / comme l'appareil) et écran à l'ouverture, enregistrés sous la clé `preferences` du `Depot`.
 - `models/` : `livre.dart` (`Livre`, `StatutLecture`, `Possession` : chez moi / prêté / emprunté), `bouteille.dart` (`Bouteille`, `TypeVin`, `Emplacement` zone + rangée + colonne, `Mouvement` = historique des entrées/sorties).
 - `data/depot.dart` : `Depot` (listes JSON par clé), `DepotPreferences` (shared_preferences), `DepotMemoire` (tests).
 - `state/` : `CollectionController` (base : charger / enregistrer / supprimer, `normaliser` pour la recherche sans accents), `BibliothequeController` (+ `FiltreLivres`), `CaveController` (ajout / retrait de bouteilles, total).
@@ -18,11 +23,13 @@ Application Flutter (Android + web + Windows) pour gérer **sa bibliothèque** (
 
 ## Pièges connus (tests widget)
 - `ListView` paresseuse : `scrollUntilVisible` avant de remplir un champ hors écran.
-- Deux `FloatingActionButton` dans l'`IndexedStack` : garder `heroTag: null`.
+- Navigation dans les tests : `find.byIcon(Icons.menu)` puis `find.byKey(Key('menu-<section>'))` (le libellé du menu peut aussi être le titre de l'écran).
+- `FloatingActionButton` : garder `heroTag: null`.
 - `find.text` doit être unique.
 
 ## Environnement (Windows)
 - Flutter : `C:\Users\benja\Documents\flutter` (les scripts l'ajoutent au PATH si besoin).
 - `lancer.bat` : lance l'appli (Chrome sur http://localhost:8081, Windows ou Android). Le port est fixe pour garder les données saisies dans le navigateur.
 - `verifier.bat` : analyse + tests → `verification.log`.
+- Aperçu dans le navigateur intégré de Claude : `flutter build web` puis `node outils/servir_web.js 8082` (http://localhost:8082). L'outil d'aperçu de l'app lit la config d'ODV : lancer le serveur en tâche de fond et ouvrir l'URL.
 - L'appli Windows nécessite le « Mode développeur » de Windows (liens symboliques des plugins) : `start ms-settings:developers`.

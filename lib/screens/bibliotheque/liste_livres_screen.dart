@@ -6,9 +6,12 @@ import '../../widgets/communs.dart';
 import 'formulaire_livre_screen.dart';
 
 class ListeLivresScreen extends StatefulWidget {
-  const ListeLivresScreen({super.key, required this.controller});
+  const ListeLivresScreen({super.key, required this.controller, this.menu});
 
   final BibliothequeController controller;
+
+  /// Menu latéral (tiroir) affiché par le bouton ☰.
+  final Widget? menu;
 
   @override
   State<ListeLivresScreen> createState() => _ListeLivresScreenState();
@@ -31,6 +34,7 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: widget.menu,
       appBar: AppBar(title: const Text('Ma bibliothèque')),
       floatingActionButton: FloatingActionButton(
         heroTag: null,

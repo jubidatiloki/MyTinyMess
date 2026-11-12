@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/depot.dart';
-import 'screens/accueil_screen.dart';
+import 'screens/racine_screen.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
+import 'state/preferences_controller.dart';
+import 'theme.dart';
 
 class MyTinyMessApp extends StatefulWidget {
-  const MyTinyMessApp({super.key, required this.depot});
+  const MyTinyMessApp({super.key, required this.depot, this.preferences});
 
   final Depot depot;
+
+  /// Préférences déjà chargées (par main.dart, pour ouvrir directement
+  /// le bon thème). Sinon elles sont chargées ici.
+  final PreferencesController? preferences;
 
   @override
   State<MyTinyMessApp> createState() => _MyTinyMessAppState();
@@ -18,40 +24,46 @@ class MyTinyMessApp extends StatefulWidget {
 class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final BibliothequeController _bibliotheque;
   late final CaveController _cave;
+  late final PreferencesController _preferences;
 
   @override
   void initState() {
     super.initState();
     _bibliotheque = BibliothequeController(widget.depot)..charger();
     _cave = CaveController(widget.depot)..charger();
+    _preferences =
+        widget.preferences ?? (PreferencesController(widget.depot)..charger());
   }
 
   @override
   void dispose() {
     _bibliotheque.dispose();
     _cave.dispose();
+    if (widget.preferences == null) {
+      _preferences.dispose();
+    }
     super.dispose();
   }
 
-  ThemeData _theme(Brightness luminosite) => ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF7B1E3A), // bordeaux
-      brightness: luminosite,
-    ),
-    useMaterial3: true,
-  );
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'My Tiny Mess',
-      debugShowCheckedModeBanner: false,
-      theme: _theme(Brightness.light),
-      darkTheme: _theme(Brightness.dark),
-      locale: const Locale('fr'),
-      supportedLocales: const [Locale('fr')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: AccueilScreen(bibliotheque: _bibliotheque, cave: _cave),
+    return ListenableBuilder(
+      listenable: _preferences,
+      builder: (context, _) => MaterialApp(
+        title: 'My Tiny Mess',
+        debugShowCheckedModeBanner: false,
+        theme: construireTheme(Brightness.light),
+        darkTheme: construireTheme(Brightness.dark),
+        themeMode: _preferences.theme.mode,
+        locale: const Locale('fr'),
+        supportedLocales: const [Locale('fr')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: RacineScreen(
+          bibliotheque: _bibliotheque,
+          cave: _cave,
+          preferences: _preferences,
+        ),
+      ),
     );
   }
 }

@@ -6,9 +6,12 @@ import '../../widgets/communs.dart';
 import 'formulaire_bouteille_screen.dart';
 
 class ListeBouteillesScreen extends StatefulWidget {
-  const ListeBouteillesScreen({super.key, required this.controller});
+  const ListeBouteillesScreen({super.key, required this.controller, this.menu});
 
   final CaveController controller;
+
+  /// Menu latéral (tiroir) affiché par le bouton ☰.
+  final Widget? menu;
 
   @override
   State<ListeBouteillesScreen> createState() => _ListeBouteillesScreenState();
@@ -34,6 +37,7 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: widget.menu,
       appBar: AppBar(
         title: ListenableBuilder(
           listenable: widget.controller,
