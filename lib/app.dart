@@ -23,8 +23,7 @@ class MyTinyMessApp extends StatefulWidget {
 }
 
 class _MyTinyMessAppState extends State<MyTinyMessApp> {
-  late final LieuxController _lieuxLivres;
-  late final LieuxController _lieuxCave;
+  late final LieuxController _lieux;
   late final BibliothequeController _bibliotheque;
   late final CaveController _cave;
   late final PreferencesController _preferences;
@@ -33,14 +32,13 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   void initState() {
     super.initState();
     final depot = widget.depot;
-    _lieuxLivres = LieuxController(depot, LieuxController.cleLivres)..charger();
-    _lieuxCave = LieuxController(depot, LieuxController.cleCave);
-    _bibliotheque = BibliothequeController(depot, lieux: _lieuxLivres)
-      ..charger();
-    _cave = CaveController(depot, lieux: _lieuxCave);
+    // Emplacements communs aux livres et à la cave.
+    _lieux = LieuxController(depot);
+    _bibliotheque = BibliothequeController(depot, lieux: _lieux)..charger();
+    _cave = CaveController(depot, lieux: _lieux);
     // Les anciennes zones de la cave deviennent des lieux une fois tout lu.
     Future.wait([
-      _lieuxCave.charger(),
+      _lieux.charger(),
       _cave.charger(),
     ]).then((_) => _cave.migrerZones());
     _preferences =
@@ -49,7 +47,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
 
   @override
   void dispose() {
-    for (final c in [_lieuxLivres, _lieuxCave, _bibliotheque, _cave]) {
+    for (final c in [_lieux, _bibliotheque, _cave]) {
       c.dispose();
     }
     if (widget.preferences == null) {
@@ -73,9 +71,8 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: RacineScreen(
           bibliotheque: _bibliotheque,
-          lieuxLivres: _lieuxLivres,
+          lieux: _lieux,
           cave: _cave,
-          lieuxCave: _lieuxCave,
           preferences: _preferences,
         ),
       ),

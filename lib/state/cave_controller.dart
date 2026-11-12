@@ -8,7 +8,7 @@ class CaveController extends CollectionController<Bouteille> {
 
   static const cle = 'bouteilles';
 
-  /// Emplacements personnalisés de la cave.
+  /// Emplacements personnalisés (communs avec la bibliothèque).
   LieuxController? lieux;
 
   @override
@@ -21,10 +21,13 @@ class CaveController extends CollectionController<Bouteille> {
   /// Nombre total de bouteilles dans la cave.
   int get totalBouteilles => elements.fold(0, (s, b) => s + b.quantite);
 
-  /// Nombre de bouteilles rangées directement dans ce lieu.
-  int nombreDans(String lieuId) => elements
-      .where((b) => b.emplacement.lieuId == lieuId)
-      .fold(0, (s, b) => s + b.quantite);
+  /// Nombre de bouteilles dans ce lieu, y compris dans ce qu'il contient.
+  int nombreDans(String lieuId) {
+    final dedans = lieux?.descendantsEtSoi(lieuId) ?? {lieuId};
+    return elements
+        .where((b) => dedans.contains(b.emplacement.lieuId))
+        .fold(0, (s, b) => s + b.quantite);
+  }
 
   /// « Cave › Casier A · rangée 2 » (vide si rien n'est précisé).
   String emplacementDe(Bouteille b) =>

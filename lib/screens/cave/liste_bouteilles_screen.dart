@@ -6,7 +6,6 @@ import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
-import '../lieux_screen.dart';
 import 'formulaire_bouteille_screen.dart';
 
 class ListeBouteillesScreen extends StatefulWidget {
@@ -15,12 +14,16 @@ class ListeBouteillesScreen extends StatefulWidget {
     required this.controller,
     required this.lieux,
     this.menu,
+    this.onGererLieux,
   });
 
   final CaveController controller;
 
-  /// Emplacements personnalisés de la cave.
+  /// Emplacements personnalisés (communs avec la bibliothèque).
   final LieuxController lieux;
+
+  /// Ouvre l'écran « Emplacements » (bouton de la barre de titre).
+  final VoidCallback? onGererLieux;
 
   /// Menu latéral (tiroir) affiché par le bouton ☰.
   final Widget? menu;
@@ -49,23 +52,6 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
     );
   }
 
-  void _gererLieux() {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => LieuxScreen(
-          lieux: widget.lieux,
-          titre: 'Emplacements de la cave',
-          elements: 'bouteilles',
-          contenu: (id) {
-            final n = widget.controller.nombreDans(id);
-            return n == 0 ? null : '$n bouteille${n > 1 ? 's' : ''}';
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return PageOdv(
@@ -82,11 +68,12 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
       ),
       menu: widget.menu,
       actions: [
-        IconButton(
-          tooltip: 'Emplacements',
-          icon: const Icon(Icons.shelves),
-          onPressed: _gererLieux,
-        ),
+        if (widget.onGererLieux != null)
+          IconButton(
+            tooltip: 'Emplacements',
+            icon: const Icon(Icons.shelves),
+            onPressed: widget.onGererLieux,
+          ),
       ],
       bouton: BoutonAjout(libelle: 'Ajouter un vin', onPressed: _ouvrir),
       corps: ListenableBuilder(

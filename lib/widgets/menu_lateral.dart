@@ -8,6 +8,7 @@ IconData iconeSection(Section s) => switch (s) {
   Section.accueil => Icons.dashboard_outlined,
   Section.bibliotheque => Icons.menu_book_outlined,
   Section.cave => Icons.wine_bar_outlined,
+  Section.emplacements => Icons.shelves,
   Section.bazar => Icons.inventory_2_outlined,
   Section.preferences => Icons.settings_outlined,
   Section.aPropos => Icons.info_outline,

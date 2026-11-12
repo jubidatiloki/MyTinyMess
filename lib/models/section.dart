@@ -3,6 +3,7 @@ enum Section {
   accueil('Vue d\'ensemble'),
   bibliotheque('Ma bibliothèque'),
   cave('Ma cave'),
+  emplacements('Emplacements'),
   bazar('Mon bazar'),
   preferences('Préférences'),
   aPropos('À propos');
@@ -14,5 +15,5 @@ enum Section {
   static const demarrages = [accueil, bibliotheque, cave];
 
   /// Rubriques « collections » (le reste est séparé par un trait).
-  static const collections = [accueil, bibliotheque, cave, bazar];
+  static const collections = [accueil, bibliotheque, cave, emplacements, bazar];
 }

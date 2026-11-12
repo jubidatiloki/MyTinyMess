@@ -2,7 +2,10 @@
 enum StatutLecture {
   aLire('À lire'),
   enCours('En cours'),
-  lu('Lu');
+  lu('Lu'),
+
+  /// Livre que l'on aimerait avoir : pas encore dans la bibliothèque.
+  souhait('Liste de souhaits');
 
   const StatutLecture(this.libelle);
   final String libelle;
@@ -72,6 +75,9 @@ class Livre {
   final String? lieuId;
 
   bool get estChezMoi => possession == Possession.possede;
+
+  /// Dans la liste de souhaits (pas encore possédé).
+  bool get estSouhait => statut == StatutLecture.souhait;
 
   /// Le livre est prêté à [a] (ou emprunté si [emprunte] est vrai).
   Livre preter(String a, {DateTime? le, bool emprunte = false}) => _copie(

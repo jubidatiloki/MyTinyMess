@@ -15,7 +15,7 @@ void main() {
 
     setUp(() async {
       depot = DepotMemoire();
-      lieux = LieuxController(depot, LieuxController.cleLivres);
+      lieux = LieuxController(depot);
       await lieux.charger();
       salon = (await lieux.creer('Salon')).id;
       biblio = (await lieux.creer('Grande bibliothèque', parentId: salon)).id;
@@ -47,13 +47,34 @@ void main() {
     });
 
     test('gardés après redémarrage', () async {
-      final autre = LieuxController(depot, LieuxController.cleLivres);
+      final autre = LieuxController(depot);
       await autre.charger();
       expect(autre.chemin(etagere), 'Salon › Grande bibliothèque › Étagère 1');
-      // Les lieux de la cave sont séparés de ceux des livres.
-      final caveLieux = LieuxController(depot, LieuxController.cleCave);
-      await caveLieux.charger();
-      expect(caveLieux.elements, isEmpty);
+    });
+
+    test('un même emplacement contient livres et bouteilles', () async {
+      final biblioCtrl = BibliothequeController(depot, lieux: lieux);
+      await biblioCtrl.charger();
+      await biblioCtrl.enregistrer(
+        Livre(id: '1', titre: 'Dune', lieuId: etagere),
+      );
+      final caveCtrl = CaveController(depot, lieux: lieux);
+      await caveCtrl.charger();
+      await caveCtrl.enregistrer(
+        Bouteille(
+          id: 'b',
+          nom: 'Chinon',
+          emplacement: Emplacement(lieuId: biblio),
+        ).ajouter(4),
+      );
+      // Le salon compte tout ce qu'il contient, sous-emplacements compris.
+      expect(biblioCtrl.nombreDans(salon), 1);
+      expect(caveCtrl.nombreDans(salon), 4);
+      expect(caveCtrl.nombreDans(etagere), 0);
+      expect(
+        caveCtrl.emplacementDe(caveCtrl.parId('b')!),
+        'Salon › Grande bibliothèque',
+      );
     });
 
     test('filtre et recherche des livres par emplacement', () async {
@@ -75,6 +96,23 @@ void main() {
         'Salon › Grande bibliothèque › Étagère 1',
       );
     });
+  });
+
+  test('liste de souhaits : à part de la bibliothèque', () async {
+    final ctrl = BibliothequeController(DepotMemoire());
+    await ctrl.charger();
+    await ctrl.enregistrer(const Livre(id: '1', titre: 'Dune'));
+    await ctrl.enregistrer(
+      const Livre(id: '2', titre: 'Hypérion', statut: StatutLecture.souhait),
+    );
+    expect(ctrl.nombreLivres, 1);
+    expect(ctrl.nombreSouhaits, 1);
+    expect(ctrl.rechercher().single.titre, 'Dune');
+    expect(
+      ctrl.rechercher(filtre: FiltreLivres.souhaits).single.titre,
+      'Hypérion',
+    );
+    expect(ctrl.parId('2')!.estSouhait, isTrue);
   });
 
   group('BibliothequeController', () {
@@ -138,7 +176,7 @@ void main() {
 
     setUp(() async {
       final depot = DepotMemoire();
-      lieux = LieuxController(depot, LieuxController.cleCave);
+      lieux = LieuxController(depot);
       await lieux.charger();
       casier = (await lieux.creer('Casier')).id;
       fond = (await lieux.creer('Cave du fond')).id;
@@ -182,7 +220,7 @@ void main() {
           'emplacement': {'zone': 'cellier'},
         },
       ]);
-      final l = LieuxController(depot, LieuxController.cleCave);
+      final l = LieuxController(depot);
       await l.charger();
       final c = CaveController(depot, lieux: l);
       await c.charger();

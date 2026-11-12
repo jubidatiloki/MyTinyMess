@@ -1,7 +1,7 @@
 name: my_tiny_mess
 description: "Gérer sa bibliothèque et sa cave à vin."
 publish_to: 'none'
-version: 0.5.0
+version: 0.6.0
 
 environment:
   sdk: ^3.10.4

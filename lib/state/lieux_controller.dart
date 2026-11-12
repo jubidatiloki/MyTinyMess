@@ -1,17 +1,23 @@
 import 'package:uuid/uuid.dart';
 
+import '../data/depot.dart';
 import '../models/lieu.dart';
 import 'collection_controller.dart';
 
 /// Lieu et sa profondeur dans l'arbre (0 = premier niveau).
 typedef NoeudLieu = ({Lieu lieu, int profondeur});
 
-/// Emplacements personnalisés d'une collection (livres ou cave).
+/// Emplacements personnalisés, communs aux livres et à la cave (une même
+/// pièce peut contenir des livres et des bouteilles).
 class LieuxController extends CollectionController<Lieu> {
-  LieuxController(super.depot, super.cle);
+  LieuxController(Depot depot) : super(depot, cle);
 
-  static const cleLivres = 'lieuxLivres';
-  static const cleCave = 'lieuxCave';
+  static const cle = 'lieux';
+
+  /// Anciennes clés (versions 0.3 à 0.5 : un jeu de lieux par collection),
+  /// fusionnées par `fusionnerAnciensLieux`.
+  static const ancienneCleLivres = 'lieuxLivres';
+  static const ancienneCleCave = 'lieuxCave';
 
   @override
   Lieu depuisJson(Map<String, dynamic> json) => Lieu.fromJson(json);

@@ -8,6 +8,7 @@ import '../state/preferences_controller.dart';
 import '../widgets/menu_lateral.dart';
 import 'bibliotheque/liste_livres_screen.dart';
 import 'cave/liste_bouteilles_screen.dart';
+import 'lieux_screen.dart';
 import 'pages_simples.dart';
 import 'preferences_screen.dart';
 import 'tableau_de_bord_screen.dart';
@@ -17,9 +18,8 @@ class RacineScreen extends StatefulWidget {
   const RacineScreen({
     super.key,
     required this.bibliotheque,
-    required this.lieuxLivres,
     required this.cave,
-    required this.lieuxCave,
+    required this.lieux,
     required this.preferences,
   });
 
@@ -27,9 +27,10 @@ class RacineScreen extends StatefulWidget {
   static const largeurMenuFixe = 720.0;
 
   final BibliothequeController bibliotheque;
-  final LieuxController lieuxLivres;
   final CaveController cave;
-  final LieuxController lieuxCave;
+
+  /// Emplacements communs aux livres et à la cave.
+  final LieuxController lieux;
   final PreferencesController preferences;
 
   @override
@@ -45,17 +46,26 @@ class _RacineScreenState extends State<RacineScreen> {
     Section.accueil => TableauDeBordScreen(
       bibliotheque: widget.bibliotheque,
       cave: widget.cave,
+      lieux: widget.lieux,
       onOuvrir: _ouvrir,
       menu: menu,
     ),
     Section.bibliotheque => ListeLivresScreen(
       controller: widget.bibliotheque,
-      lieux: widget.lieuxLivres,
+      lieux: widget.lieux,
       menu: menu,
+      onGererLieux: () => _ouvrir(Section.emplacements),
     ),
     Section.cave => ListeBouteillesScreen(
       controller: widget.cave,
-      lieux: widget.lieuxCave,
+      lieux: widget.lieux,
+      menu: menu,
+      onGererLieux: () => _ouvrir(Section.emplacements),
+    ),
+    Section.emplacements => LieuxScreen(
+      lieux: widget.lieux,
+      bibliotheque: widget.bibliotheque,
+      cave: widget.cave,
       menu: menu,
     ),
     Section.bazar => EcranAVenir(

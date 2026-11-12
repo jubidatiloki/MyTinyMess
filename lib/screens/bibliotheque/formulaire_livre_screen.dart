@@ -49,6 +49,8 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
 
   bool get _modification => widget.livre != null;
 
+  bool get _souhait => _statut == StatutLecture.souhait;
+
   @override
   void dispose() {
     for (final c in [
@@ -70,11 +72,13 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
       return;
     }
     final ancien = widget.livre;
-    final chezMoi = _possession == Possession.possede;
+    final souhait = _souhait;
+    final possession = souhait ? Possession.possede : _possession;
+    final chezMoi = possession == Possession.possede;
     // On garde la date du prêt si le prêt ne change pas.
     final memePret =
         ancien != null &&
-        ancien.possession == _possession &&
+        ancien.possession == possession &&
         ancien.personne == texteOuNull(_personne.text);
     final livre = Livre(
       id: ancien?.id ?? const Uuid().v4(),
@@ -86,12 +90,12 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
       statut: _statut,
       note: _note,
       notes: _notes.text.trim(),
-      possession: _possession,
+      possession: possession,
       personne: chezMoi ? null : texteOuNull(_personne.text),
       datePret: chezMoi
           ? null
           : (memePret ? ancien.datePret : null) ?? DateTime.now(),
-      lieuId: _lieu,
+      lieuId: souhait ? null : _lieu,
     );
     await widget.controller.enregistrer(livre);
     if (mounted) {
@@ -180,15 +184,8 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
               decoration: const InputDecoration(labelText: 'ISBN'),
             ),
             espace,
-            ChampLieu(
-              key: const Key('champ-lieu'),
-              lieux: widget.lieux,
-              valeur: _lieu,
-              libelle: 'Rangé où ?',
-              onChanged: (v) => setState(() => _lieu = v),
-            ),
-            espace,
             DropdownButtonFormField<StatutLecture>(
+              key: const Key('champ-lecture'),
               initialValue: _statut,
               decoration: const InputDecoration(labelText: 'Lecture'),
               items: [
@@ -197,6 +194,18 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
               ],
               onChanged: (s) => setState(() => _statut = s!),
             ),
+            // Un livre de la liste de souhaits n'est pas encore chez moi :
+            // ni emplacement, ni prêt.
+            if (!_souhait) ...[
+              espace,
+              ChampLieu(
+                key: const Key('champ-lieu'),
+                lieux: widget.lieux,
+                valeur: _lieu,
+                libelle: 'Rangé où ?',
+                onChanged: (v) => setState(() => _lieu = v),
+              ),
+            ],
             espace,
             Text('Ma note', style: Theme.of(context).textTheme.labelLarge),
             Row(
@@ -213,36 +222,40 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
                   ),
               ],
             ),
-            espace,
-            DropdownButtonFormField<Possession>(
-              key: const Key('champ-possession'),
-              initialValue: _possession,
-              decoration: const InputDecoration(labelText: 'Où est le livre ?'),
-              items: [
-                for (final p in Possession.values)
-                  DropdownMenuItem(value: p, child: Text(p.libelle)),
-              ],
-              onChanged: (p) => setState(() => _possession = p!),
-            ),
-            if (_possession != Possession.possede) ...[
+            if (!_souhait) ...[
               espace,
-              TextFormField(
-                key: const Key('champ-personne'),
-                controller: _personne,
-                decoration: InputDecoration(
-                  labelText: _possession == Possession.prete
-                      ? 'Prêté à *'
-                      : 'Emprunté à *',
-                  helperText:
-                      datePret != null &&
-                          _possession == widget.livre?.possession
-                      ? 'Depuis le ${formaterDate(datePret)}'
+              DropdownButtonFormField<Possession>(
+                key: const Key('champ-possession'),
+                initialValue: _possession,
+                decoration: const InputDecoration(
+                  labelText: 'Où est le livre ?',
+                ),
+                items: [
+                  for (final p in Possession.values)
+                    DropdownMenuItem(value: p, child: Text(p.libelle)),
+                ],
+                onChanged: (p) => setState(() => _possession = p!),
+              ),
+              if (_possession != Possession.possede) ...[
+                espace,
+                TextFormField(
+                  key: const Key('champ-personne'),
+                  controller: _personne,
+                  decoration: InputDecoration(
+                    labelText: _possession == Possession.prete
+                        ? 'Prêté à *'
+                        : 'Emprunté à *',
+                    helperText:
+                        datePret != null &&
+                            _possession == widget.livre?.possession
+                        ? 'Depuis le ${formaterDate(datePret)}'
+                        : null,
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Indiquez la personne'
                       : null,
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Indiquez la personne'
-                    : null,
-              ),
+              ],
             ],
             espace,
             TextFormField(

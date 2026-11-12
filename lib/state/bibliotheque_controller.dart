@@ -8,6 +8,7 @@ enum FiltreLivres {
   aLire('À lire'),
   enCours('En cours'),
   lus('Lus'),
+  souhaits('Liste de souhaits'),
   pretes('Prêtés'),
   empruntes('Empruntés');
 
@@ -15,10 +16,12 @@ enum FiltreLivres {
   final String libelle;
 
   bool garde(Livre l) => switch (this) {
-    tous => true,
+    // « Tous » = la bibliothèque : sans la liste de souhaits.
+    tous => !l.estSouhait,
     aLire => l.statut == StatutLecture.aLire,
     enCours => l.statut == StatutLecture.enCours,
     lus => l.statut == StatutLecture.lu,
+    souhaits => l.estSouhait,
     pretes => l.possession == Possession.prete,
     empruntes => l.possession == Possession.emprunte,
   };
@@ -29,8 +32,14 @@ class BibliothequeController extends CollectionController<Livre> {
 
   static const cle = 'livres';
 
-  /// Emplacements personnalisés de la bibliothèque.
+  /// Emplacements personnalisés (communs avec la cave).
   LieuxController? lieux;
+
+  /// Livres possédés (hors liste de souhaits).
+  int get nombreLivres => elements.where((l) => !l.estSouhait).length;
+
+  /// Livres de la liste de souhaits.
+  int get nombreSouhaits => elements.where((l) => l.estSouhait).length;
 
   @override
   Livre depuisJson(Map<String, dynamic> json) => Livre.fromJson(json);
@@ -42,9 +51,12 @@ class BibliothequeController extends CollectionController<Livre> {
   /// Chemin de l'emplacement du livre (« Salon › Étagère 2 ») ou null.
   String? emplacementDe(Livre l) => lieux?.chemin(l.lieuId);
 
-  /// Nombre de livres rangés directement dans ce lieu.
-  int nombreDans(String lieuId) =>
-      elements.where((l) => l.lieuId == lieuId).length;
+  /// Nombre de livres dans ce lieu, y compris dans ce qu'il contient
+  /// (« Salon » compte aussi les livres de ses étagères).
+  int nombreDans(String lieuId) {
+    final dedans = lieux?.descendantsEtSoi(lieuId) ?? {lieuId};
+    return elements.where((l) => dedans.contains(l.lieuId)).length;
+  }
 
   /// Livres correspondant à la recherche, au filtre et à l'emplacement
   /// ([lieuId] : ce lieu et tout ce qu'il contient), triés par titre.

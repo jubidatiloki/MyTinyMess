@@ -132,8 +132,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Salon'), findsOneWidget);
     expect(find.text('Étagère 1'), findsOneWidget);
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
+    // Le bouton de la bibliothèque a ouvert la rubrique « Emplacements ».
+    expect(find.widgetWithText(AppBar, 'Emplacements'), findsOneWidget);
+    await ouvrir(tester, Section.bibliotheque);
 
     // Nouveau livre rangé sur l'étagère.
     await tester.tap(find.byTooltip('Ajouter un livre'));
@@ -161,6 +162,81 @@ void main() {
     await tester.tap(find.text('Salon').last);
     await tester.pumpAndSettle();
     expect(find.text('Dune'), findsOneWidget);
+
+    // Vue d'ensemble : chaque emplacement avec son nombre de livres.
+    await ouvrir(tester, Section.accueil);
+    final salon = find.byWidgetPredicate(
+      (w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('resume-lieu-') &&
+          (w.key! as ValueKey<String>).value != 'resume-lieu-aucun',
+    );
+    expect(salon, findsNWidgets(2));
+    expect(
+      find.descendant(of: salon.first, matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(find.text('Sans emplacement'), findsNothing);
+  });
+
+  testWidgets('emplacements : modifier et supprimer depuis le menu', (
+    tester,
+  ) async {
+    await lancer(tester);
+    await ouvrir(tester, Section.emplacements);
+    expect(find.textContaining('Aucun emplacement'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Ajouter un emplacement'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-nom-lieu')), 'Garage');
+    await tester.tap(find.byKey(const Key('valider-lieu')));
+    await tester.pumpAndSettle();
+    expect(find.text('Vide'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Modifier'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-nom-lieu')), 'Cellier');
+    await tester.tap(find.byKey(const Key('valider-lieu')));
+    await tester.pumpAndSettle();
+    expect(find.text('Cellier'), findsOneWidget);
+    expect(find.text('Garage'), findsNothing);
+
+    await tester.tap(find.byTooltip('Supprimer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirmer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cellier'), findsNothing);
+    expect(find.textContaining('Aucun emplacement'), findsOneWidget);
+  });
+
+  testWidgets('liste de souhaits : sans emplacement, à part des livres', (
+    tester,
+  ) async {
+    final depot = await lancer(tester);
+    await ouvrir(tester, Section.bibliotheque);
+    await tester.tap(find.byTooltip('Ajouter un livre'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-titre')), 'Hypérion');
+    expect(find.byKey(const Key('champ-lieu')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('champ-lecture')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Liste de souhaits').last);
+    await tester.pumpAndSettle();
+    // Pas encore chez moi : ni emplacement, ni prêt.
+    expect(find.byKey(const Key('champ-lieu')), findsNothing);
+    expect(find.byKey(const Key('champ-possession')), findsNothing);
+    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hypérion'), findsNothing); // filtre « Tous »
+    expect(find.text('0 livre · 1 en liste de souhaits'), findsOneWidget);
+    await tester.ensureVisible(find.text('Liste de souhaits'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Liste de souhaits'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hypérion'), findsOneWidget);
+    final livre = Livre.fromJson((await depot.lire('livres')).single);
+    expect(livre.statut, StatutLecture.souhait);
   });
 
   testWidgets('préférences : thème clair et écran d\'ouverture enregistrés', (

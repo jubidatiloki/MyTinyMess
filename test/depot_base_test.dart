@@ -63,7 +63,7 @@ void main() {
 
   test('les contrôleurs fonctionnent sur la base', () async {
     final depot = await ouvrir();
-    final lieux = LieuxController(depot, LieuxController.cleLivres);
+    final lieux = LieuxController(depot);
     await lieux.charger();
     final salon = await lieux.creer('Salon');
     final biblio = BibliothequeController(depot, lieux: lieux);
@@ -75,10 +75,7 @@ void main() {
     final autre = BibliothequeController(await ouvrir());
     await autre.charger();
     expect(autre.elements.single.titre, 'Zadig');
-    final autresLieux = LieuxController(
-      await ouvrir(),
-      LieuxController.cleLivres,
-    );
+    final autresLieux = LieuxController(await ouvrir());
     await autresLieux.charger();
     expect(autresLieux.chemin(salon.id), 'Salon');
   });

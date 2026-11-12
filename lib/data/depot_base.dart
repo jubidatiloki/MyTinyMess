@@ -5,7 +5,7 @@ import 'package:sembast/sembast.dart';
 import 'depot.dart';
 
 /// Stockage dans la base de données locale (sembast) : une « table » par
-/// clé (livres, bouteilles, lieuxLivres, lieuxCave, preferences), un
+/// clé (livres, bouteilles, lieux, preferences), un
 /// enregistrement par élément, identifié par son `id`.
 class DepotBase implements Depot {
   DepotBase(this._base);

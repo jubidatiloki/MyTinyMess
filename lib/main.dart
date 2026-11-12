@@ -5,6 +5,7 @@ import 'app.dart';
 import 'data/base/ouvrir_base.dart';
 import 'data/depot.dart';
 import 'data/depot_base.dart';
+import 'data/fusion_lieux.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
 import 'state/lieux_controller.dart';
@@ -14,8 +15,10 @@ import 'state/preferences_controller.dart';
 const clesDonnees = [
   BibliothequeController.cle,
   CaveController.cle,
-  LieuxController.cleLivres,
-  LieuxController.cleCave,
+  LieuxController.cle,
+  // Anciennes clés (versions 0.3 à 0.5), fusionnées ensuite dans « lieux ».
+  LieuxController.ancienneCleLivres,
+  LieuxController.ancienneCleCave,
   PreferencesController.cle,
 ];
 
@@ -28,6 +31,8 @@ Future<void> main() async {
     DepotPreferences(await SharedPreferences.getInstance()),
     clesDonnees,
   );
+  // Emplacements des livres et de la cave réunis (versions ≤ 0.5).
+  await fusionnerAnciensLieux(depot);
   // Chargées avant l'affichage : l'appli s'ouvre directement dans le bon
   // thème et sur le bon écran.
   final preferences = PreferencesController(depot);

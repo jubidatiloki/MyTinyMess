@@ -6,7 +6,6 @@ import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
-import '../lieux_screen.dart';
 import 'formulaire_livre_screen.dart';
 
 class ListeLivresScreen extends StatefulWidget {
@@ -15,12 +14,16 @@ class ListeLivresScreen extends StatefulWidget {
     required this.controller,
     required this.lieux,
     this.menu,
+    this.onGererLieux,
   });
 
   final BibliothequeController controller;
 
-  /// Emplacements personnalisés de la bibliothèque.
+  /// Emplacements personnalisés (communs avec la cave).
   final LieuxController lieux;
+
+  /// Ouvre l'écran « Emplacements » (bouton de la barre de titre).
+  final VoidCallback? onGererLieux;
 
   /// Menu latéral (tiroir) affiché par le bouton ☰.
   final Widget? menu;
@@ -48,23 +51,6 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
     );
   }
 
-  void _gererLieux() {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => LieuxScreen(
-          lieux: widget.lieux,
-          titre: 'Emplacements des livres',
-          elements: 'livres',
-          contenu: (id) {
-            final n = widget.controller.nombreDans(id);
-            return n == 0 ? null : '$n livre${n > 1 ? 's' : ''}';
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return PageOdv(
@@ -72,20 +58,25 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
       titreWidget: ListenableBuilder(
         listenable: widget.controller,
         builder: (context, _) {
-          final n = widget.controller.elements.length;
+          final n = widget.controller.nombreLivres;
+          final s = widget.controller.nombreSouhaits;
           return TitrePage(
             titre: 'Ma bibliothèque',
-            sousTitre: '$n livre${n > 1 ? 's' : ''}',
+            sousTitre: [
+              '$n livre${n > 1 ? 's' : ''}',
+              if (s > 0) '$s en liste de souhaits',
+            ].join(' · '),
           );
         },
       ),
       menu: widget.menu,
       actions: [
-        IconButton(
-          tooltip: 'Emplacements',
-          icon: const Icon(Icons.shelves),
-          onPressed: _gererLieux,
-        ),
+        if (widget.onGererLieux != null)
+          IconButton(
+            tooltip: 'Emplacements',
+            icon: const Icon(Icons.shelves),
+            onPressed: widget.onGererLieux,
+          ),
       ],
       bouton: BoutonAjout(libelle: 'Ajouter un livre', onPressed: _ouvrir),
       corps: ListenableBuilder(
@@ -186,6 +177,7 @@ class _LigneLivre extends StatelessWidget {
         StatutLecture.aLire => Icons.bookmark_border,
         StatutLecture.enCours => Icons.auto_stories,
         StatutLecture.lu => Icons.check_circle_outline,
+        StatutLecture.souhait => Icons.favorite_border,
       }),
       title: Text(livre.titre, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Column(
