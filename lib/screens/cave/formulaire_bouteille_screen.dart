@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../models/lieu.dart';
 import '../../models/bouteille.dart';
 import '../../state/cave_controller.dart';
 import '../../state/lieux_controller.dart';
@@ -239,6 +240,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
             espace,
             ChampLieu(
               key: const Key('champ-lieu'),
+              type: TypeLieu.cave,
               lieux: widget.lieux,
               valeur: _lieu,
               libelle: 'Lieu',

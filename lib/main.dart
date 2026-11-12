@@ -31,8 +31,10 @@ Future<void> main() async {
     DepotPreferences(await SharedPreferences.getInstance()),
     clesDonnees,
   );
-  // Emplacements des livres et de la cave réunis (versions ≤ 0.5).
+  // Emplacements des versions précédentes : listes réunies (≤ 0.5) et
+  // type livres / cave attribué selon le contenu (0.6).
   await fusionnerAnciensLieux(depot);
+  await typerLieux(depot);
   // Chargées avant l'affichage : l'appli s'ouvre directement dans le bon
   // thème et sur le bon écran.
   final preferences = PreferencesController(depot);

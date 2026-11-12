@@ -7,8 +7,8 @@ import 'collection_controller.dart';
 /// Lieu et sa profondeur dans l'arbre (0 = premier niveau).
 typedef NoeudLieu = ({Lieu lieu, int profondeur});
 
-/// Emplacements personnalisés, communs aux livres et à la cave (une même
-/// pièce peut contenir des livres et des bouteilles).
+/// Emplacements personnalisés. Chacun est soit pour les livres, soit pour la
+/// cave (`TypeLieu`), jamais les deux ; les deux sortes sont dans la même liste.
 class LieuxController extends CollectionController<Lieu> {
   LieuxController(Depot depot) : super(depot, cle);
 
@@ -46,21 +46,43 @@ class LieuxController extends CollectionController<Lieu> {
     return noms.isEmpty ? null : noms.join(' › ');
   }
 
+  /// Type effectif d'un lieu : celui de son emplacement de premier niveau
+  /// (un sous-emplacement suit toujours son parent).
+  TypeLieu typeDe(Lieu l) {
+    final vus = <String>{};
+    var courant = l;
+    while (vus.add(courant.id)) {
+      final p = _parentDe(courant);
+      if (p == null) {
+        break;
+      }
+      courant = parId(p)!;
+    }
+    return courant.type;
+  }
+
   /// Lieux directement rangés dans [parentId] (null = premier niveau),
-  /// triés par nom.
-  List<Lieu> enfants(String? parentId) {
-    final liste = elements.where((l) => _parentDe(l) == parentId).toList()
-      ..sort((a, b) => normaliser(a.nom).compareTo(normaliser(b.nom)));
+  /// triés par nom. [type] : seulement les emplacements de ce type.
+  List<Lieu> enfants(String? parentId, {TypeLieu? type}) {
+    final liste =
+        elements
+            .where(
+              (l) =>
+                  _parentDe(l) == parentId &&
+                  (type == null || typeDe(l) == type),
+            )
+            .toList()
+          ..sort((a, b) => normaliser(a.nom).compareTo(normaliser(b.nom)));
     return liste;
   }
 
-  /// Tous les lieux dans l'ordre d'affichage (chaque lieu suivi de son
-  /// contenu), avec leur profondeur.
-  List<NoeudLieu> arbre() {
+  /// Tous les lieux (ou ceux d'un [type]) dans l'ordre d'affichage : chaque
+  /// lieu suivi de son contenu, avec sa profondeur.
+  List<NoeudLieu> arbre({TypeLieu? type}) {
     final resultat = <NoeudLieu>[];
     final vus = <String>{};
     void parcourir(String? parentId, int profondeur) {
-      for (final l in enfants(parentId)) {
+      for (final l in enfants(parentId, type: type)) {
         if (vus.add(l.id)) {
           resultat.add((lieu: l, profondeur: profondeur));
           parcourir(l.id, profondeur + 1);
@@ -88,11 +110,19 @@ class LieuxController extends CollectionController<Lieu> {
     return resultat;
   }
 
-  Future<Lieu> creer(String nom, {String? parentId}) async {
+  /// Crée un emplacement. Dans un parent, il en prend le type ; sinon
+  /// [type] (bibliothèque par défaut).
+  Future<Lieu> creer(
+    String nom, {
+    String? parentId,
+    TypeLieu type = TypeLieu.livres,
+  }) async {
+    final parent = parentId == null ? null : parId(parentId);
     final lieu = Lieu(
       id: const Uuid().v4(),
       nom: nom.trim(),
-      parentId: parentId,
+      parentId: parent?.id,
+      type: parent == null ? type : typeDe(parent),
     );
     await enregistrer(lieu);
     return lieu;
@@ -107,8 +137,11 @@ class LieuxController extends CollectionController<Lieu> {
       return;
     }
     final parent = _parentDe(lieu);
+    final type = typeDe(lieu);
     for (final enfant in enfants(id)) {
-      await enregistrer(Lieu(id: enfant.id, nom: enfant.nom, parentId: parent));
+      await enregistrer(
+        Lieu(id: enfant.id, nom: enfant.nom, parentId: parent, type: type),
+      );
     }
     await super.supprimer(id);
   }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../models/lieu.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
 import '../state/lieux_controller.dart';
 import '../theme.dart';
+import '../widgets/lieux.dart';
 import '../widgets/page.dart';
 
 /// « Vue d'ensemble » : une tuile par collection avec son compteur, puis
@@ -42,8 +44,14 @@ class TableauDeBordScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _tuiles(livres, bouteilles),
-                const TitreSection('Emplacements'),
-                _emplacements(context),
+                if (lieux.elements.isEmpty) ...[
+                  const TitreSection('Emplacements'),
+                  _aucunEmplacement(),
+                ] else
+                  for (final type in TypeLieu.values) ...[
+                    TitreSection('Emplacements · ${type.libelle}'),
+                    _emplacements(type),
+                  ],
               ],
             ),
           );
@@ -52,50 +60,64 @@ class TableauDeBordScreen extends StatelessWidget {
     );
   }
 
-  /// Liste de tous les emplacements avec le nombre de livres et de
-  /// bouteilles dans chacun (sous-emplacements compris).
-  Widget _emplacements(BuildContext context) {
-    final noeuds = lieux.arbre();
-    if (noeuds.isEmpty) {
-      return Card(
-        child: ListTile(
-          leading: const IconeCarree(Icons.shelves),
-          title: const Text('Aucun emplacement'),
-          subtitle: const Text(
-            'Créez vos pièces, meubles et étagères pour savoir où est rangé '
-            'chaque livre et chaque bouteille.',
-          ),
-          trailing: TextButton(
-            onPressed: () => onOuvrir(Section.emplacements),
-            child: const Text('Créer'),
-          ),
-        ),
-      );
-    }
-    final livresSansLieu = bibliotheque.elements
-        .where((l) => !l.estSouhait && lieux.parId(l.lieuId ?? '') == null)
-        .length;
-    final bouteillesSansLieu = cave.elements
-        .where((b) => lieux.parId(b.emplacement.lieuId ?? '') == null)
-        .fold(0, (s, b) => s + b.quantite);
+  Widget _aucunEmplacement() => Card(
+    child: ListTile(
+      leading: const IconeCarree(Icons.shelves),
+      title: const Text('Aucun emplacement'),
+      subtitle: const Text(
+        'Créez vos pièces, meubles et étagères pour savoir où est rangé '
+        'chaque livre et chaque bouteille.',
+      ),
+      trailing: TextButton(
+        onPressed: () => onOuvrir(Section.emplacements),
+        child: const Text('Créer'),
+      ),
+    ),
+  );
+
+  /// Les emplacements d'un type avec ce qu'ils contiennent (sous-emplacements
+  /// compris), puis ce qui n'est rangé nulle part.
+  Widget _emplacements(TypeLieu type) {
+    final livres = type == TypeLieu.livres;
+    final noeuds = lieux.arbre(type: type);
+    final sansLieu = livres
+        ? bibliotheque.elements
+              .where(
+                (l) => !l.estSouhait && lieux.parId(l.lieuId ?? '') == null,
+              )
+              .length
+        : cave.elements
+              .where((b) => lieux.parId(b.emplacement.lieuId ?? '') == null)
+              .fold(0, (s, b) => s + b.quantite);
     return CarteGroupe(
       enfants: [
+        if (noeuds.isEmpty)
+          ListTile(
+            leading: IconeCarree(iconeTypeLieu(type)),
+            title: Text('Aucun emplacement pour les ${type.contenu}'),
+            trailing: TextButton(
+              onPressed: () => onOuvrir(Section.emplacements),
+              child: const Text('Créer'),
+            ),
+          ),
         for (final n in noeuds)
           _LigneEmplacement(
             key: Key('resume-lieu-${n.lieu.id}'),
             nom: n.lieu.nom,
             profondeur: n.profondeur,
-            livres: bibliotheque.nombreDans(n.lieu.id),
-            bouteilles: cave.nombreDans(n.lieu.id),
+            type: type,
+            nombre: livres
+                ? bibliotheque.nombreDans(n.lieu.id)
+                : cave.nombreDans(n.lieu.id),
             onTap: () => onOuvrir(Section.emplacements),
           ),
-        if (livresSansLieu > 0 || bouteillesSansLieu > 0)
+        if (sansLieu > 0)
           _LigneEmplacement(
-            key: const Key('resume-lieu-aucun'),
+            key: Key('resume-lieu-aucun-${type.name}'),
             nom: 'Sans emplacement',
             profondeur: 0,
-            livres: livresSansLieu,
-            bouteilles: bouteillesSansLieu,
+            type: type,
+            nombre: sansLieu,
             discret: true,
           ),
       ],
@@ -128,22 +150,24 @@ class TableauDeBordScreen extends StatelessWidget {
   );
 }
 
-/// Ligne « Salon ……… 📖 12  🍷 6 » de la vue d'ensemble.
+/// Ligne « Salon ……… 📖 12 » de la vue d'ensemble.
 class _LigneEmplacement extends StatelessWidget {
   const _LigneEmplacement({
     super.key,
     required this.nom,
     required this.profondeur,
-    required this.livres,
-    required this.bouteilles,
+    required this.type,
+    required this.nombre,
     this.onTap,
     this.discret = false,
   });
 
   final String nom;
   final int profondeur;
-  final int livres;
-  final int bouteilles;
+  final TypeLieu type;
+
+  /// Livres ou bouteilles (selon [type]) rangés dans cet emplacement.
+  final int nombre;
   final VoidCallback? onTap;
 
   /// Ligne « Sans emplacement » : en italique.
@@ -152,34 +176,14 @@ class _LigneEmplacement extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = PaletteOdv.de(context);
-    Widget compteur(IconData icone, int n, String unite) => Tooltip(
-      message: '$n $unite',
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icone, size: 16, color: n == 0 ? p.separateur : p.accentDoux),
-          const SizedBox(width: 4),
-          SizedBox(
-            width: 28,
-            child: Text(
-              '$n',
-              style: TextStyle(
-                color: n == 0 ? p.texteSecondaire : null,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
     return ListTile(
       onTap: onTap,
-      contentPadding: EdgeInsets.only(left: 16 + 24.0 * profondeur, right: 12),
+      contentPadding: EdgeInsets.only(left: 16 + 24.0 * profondeur, right: 16),
       leading: IconeCarree(
         discret
             ? Icons.help_outline
             : (profondeur == 0
-                  ? Icons.place_outlined
+                  ? iconeTypeLieu(type)
                   : Icons.subdirectory_arrow_right),
       ),
       title: Text(
@@ -190,13 +194,30 @@ class _LigneEmplacement extends StatelessWidget {
             ? TextStyle(fontStyle: FontStyle.italic, color: p.texteSecondaire)
             : null,
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          compteur(Icons.menu_book_outlined, livres, 'livres'),
-          const SizedBox(width: 12),
-          compteur(Icons.wine_bar_outlined, bouteilles, 'bouteilles'),
-        ],
+      trailing: Tooltip(
+        message: '$nombre ${type.contenu}',
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              iconeTypeLieu(type),
+              size: 16,
+              color: nombre == 0 ? p.separateur : p.accentDoux,
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 32,
+              child: Text(
+                '$nombre',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: nombre == 0 ? p.texteSecondaire : null,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

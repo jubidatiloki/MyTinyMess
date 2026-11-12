@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/lieu.dart';
 import '../../models/livre.dart';
 import '../../state/bibliotheque_controller.dart';
 import '../../state/lieux_controller.dart';
@@ -104,11 +105,12 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    if (widget.lieux.elements.isNotEmpty)
+                    if (widget.lieux.arbre(type: TypeLieu.livres).isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: FiltreLieu(
                           lieux: widget.lieux,
+                          type: TypeLieu.livres,
                           valeur: lieu,
                           onChanged: (v) => setState(() => _lieu = v),
                         ),

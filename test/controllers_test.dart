@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_tiny_mess/data/depot.dart';
 import 'package:my_tiny_mess/models/bouteille.dart';
+import 'package:my_tiny_mess/models/lieu.dart';
 import 'package:my_tiny_mess/models/livre.dart';
 import 'package:my_tiny_mess/state/bibliotheque_controller.dart';
 import 'package:my_tiny_mess/state/cave_controller.dart';
@@ -52,29 +53,34 @@ void main() {
       expect(autre.chemin(etagere), 'Salon › Grande bibliothèque › Étagère 1');
     });
 
-    test('un même emplacement contient livres et bouteilles', () async {
-      final biblioCtrl = BibliothequeController(depot, lieux: lieux);
-      await biblioCtrl.charger();
-      await biblioCtrl.enregistrer(
-        Livre(id: '1', titre: 'Dune', lieuId: etagere),
-      );
+    test('emplacements pour les livres OU pour la cave', () async {
+      final cellier = await lieux.creer('Cellier', type: TypeLieu.cave);
+      final casier = await lieux.creer('Casier', parentId: cellier.id);
+      // Un sous-emplacement prend le type de son parent.
+      expect(casier.type, TypeLieu.cave);
+      expect(lieux.typeDe(lieux.parId(etagere)!), TypeLieu.livres);
+      expect(lieux.arbre(type: TypeLieu.cave).map((n) => n.lieu.nom), [
+        'Cellier',
+        'Casier',
+      ]);
+      expect(lieux.arbre(type: TypeLieu.livres).map((n) => n.lieu.nom), [
+        'Bureau',
+        'Salon',
+        'Grande bibliothèque',
+        'Étagère 1',
+      ]);
+
       final caveCtrl = CaveController(depot, lieux: lieux);
       await caveCtrl.charger();
       await caveCtrl.enregistrer(
         Bouteille(
           id: 'b',
           nom: 'Chinon',
-          emplacement: Emplacement(lieuId: biblio),
+          emplacement: Emplacement(lieuId: casier.id),
         ).ajouter(4),
       );
-      // Le salon compte tout ce qu'il contient, sous-emplacements compris.
-      expect(biblioCtrl.nombreDans(salon), 1);
-      expect(caveCtrl.nombreDans(salon), 4);
-      expect(caveCtrl.nombreDans(etagere), 0);
-      expect(
-        caveCtrl.emplacementDe(caveCtrl.parId('b')!),
-        'Salon › Grande bibliothèque',
-      );
+      expect(caveCtrl.nombreDans(cellier.id), 4);
+      expect(caveCtrl.emplacementDe(caveCtrl.parId('b')!), 'Cellier › Casier');
     });
 
     test('filtre et recherche des livres par emplacement', () async {
@@ -178,8 +184,8 @@ void main() {
       final depot = DepotMemoire();
       lieux = LieuxController(depot);
       await lieux.charger();
-      casier = (await lieux.creer('Casier')).id;
-      fond = (await lieux.creer('Cave du fond')).id;
+      casier = (await lieux.creer('Casier', type: TypeLieu.cave)).id;
+      fond = (await lieux.creer('Cave du fond', type: TypeLieu.cave)).id;
       ctrl = CaveController(depot, lieux: lieux);
       await ctrl.charger();
       await ctrl.enregistrer(
@@ -227,6 +233,7 @@ void main() {
       await c.migrerZones();
       // Un seul lieu « Cellier » pour les deux (même nom, accents/casse).
       expect(l.elements.single.nom, 'Cellier');
+      expect(l.elements.single.type, TypeLieu.cave);
       expect(c.emplacementDe(c.parId('x')!), 'Cellier · rangée 3');
       expect(c.parId('y')!.emplacement.lieuId, l.elements.single.id);
       expect(c.parId('x')!.emplacement.ancienneZone, isNull);

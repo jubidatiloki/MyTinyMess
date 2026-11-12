@@ -1,5 +1,6 @@
 import '../data/depot.dart';
 import '../models/bouteille.dart';
+import '../models/lieu.dart';
 import 'collection_controller.dart';
 import 'lieux_controller.dart';
 
@@ -61,9 +62,11 @@ class CaveController extends CollectionController<Bouteille> {
         continue;
       }
       final existant = l
-          .enfants(null)
+          .enfants(null, type: TypeLieu.cave)
           .where((x) => normaliser(x.nom) == normaliser(zone));
-      final lieu = existant.isNotEmpty ? existant.first : await l.creer(zone);
+      final lieu = existant.isNotEmpty
+          ? existant.first
+          : await l.creer(zone, type: TypeLieu.cave);
       await enregistrer(b.avecEmplacement(b.emplacement.avecLieu(lieu.id)));
     }
   }

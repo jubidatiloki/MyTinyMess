@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/lieu.dart';
 import '../../models/bouteille.dart';
 import '../../state/cave_controller.dart';
 import '../../state/lieux_controller.dart';
@@ -102,11 +103,12 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    if (widget.lieux.elements.isNotEmpty)
+                    if (widget.lieux.arbre(type: TypeLieu.cave).isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: FiltreLieu(
                           lieux: widget.lieux,
+                          type: TypeLieu.cave,
                           valeur: lieu,
                           onChanged: (v) => setState(() => _lieu = v),
                         ),

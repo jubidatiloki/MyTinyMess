@@ -5,23 +5,36 @@ import '../state/lieux_controller.dart';
 
 /// Ouvre la fenêtre de création ([lieu] == null) ou de modification d'un
 /// emplacement. Renvoie le lieu enregistré, ou null si on annule.
+/// [type] : type imposé (depuis un formulaire de livre ou de vin) ; sinon,
+/// pour un nouvel emplacement de premier niveau, la fenêtre le demande.
 Future<Lieu?> editerLieu(
   BuildContext context,
   LieuxController lieux, {
   Lieu? lieu,
   String? parentId,
+  TypeLieu? type,
 }) => showDialog<Lieu>(
   context: context,
-  builder: (_) =>
-      _DialogueLieu(lieux: lieux, lieu: lieu, parentInitial: parentId),
+  builder: (_) => _DialogueLieu(
+    lieux: lieux,
+    lieu: lieu,
+    parentInitial: parentId,
+    typeImpose: type,
+  ),
 );
 
 class _DialogueLieu extends StatefulWidget {
-  const _DialogueLieu({required this.lieux, this.lieu, this.parentInitial});
+  const _DialogueLieu({
+    required this.lieux,
+    this.lieu,
+    this.parentInitial,
+    this.typeImpose,
+  });
 
   final LieuxController lieux;
   final Lieu? lieu;
   final String? parentInitial;
+  final TypeLieu? typeImpose;
 
   @override
   State<_DialogueLieu> createState() => _DialogueLieuState();
@@ -30,7 +43,28 @@ class _DialogueLieu extends StatefulWidget {
 class _DialogueLieuState extends State<_DialogueLieu> {
   late final _nom = TextEditingController(text: widget.lieu?.nom);
   late String? _parent = widget.lieu?.parentId ?? widget.parentInitial;
+  late TypeLieu _type = _typeInitial();
   String? _erreur;
+
+  TypeLieu _typeInitial() {
+    final lieux = widget.lieux;
+    final lieu = widget.lieu;
+    if (lieu != null) {
+      return lieux.typeDe(lieu);
+    }
+    final parent = lieux.parId(widget.parentInitial ?? '');
+    if (parent != null) {
+      return lieux.typeDe(parent);
+    }
+    return widget.typeImpose ?? TypeLieu.livres;
+  }
+
+  /// Le type se choisit seulement pour un nouvel emplacement de premier
+  /// niveau ouvert depuis l'écran Emplacements.
+  bool get _typeAuChoix =>
+      widget.lieu == null &&
+      widget.typeImpose == null &&
+      widget.lieux.parId(widget.parentInitial ?? '') == null;
 
   @override
   void dispose() {
@@ -47,9 +81,14 @@ class _DialogueLieuState extends State<_DialogueLieu> {
     final existant = widget.lieu;
     final Lieu resultat;
     if (existant == null) {
-      resultat = await widget.lieux.creer(nom, parentId: _parent);
+      resultat = await widget.lieux.creer(nom, parentId: _parent, type: _type);
     } else {
-      resultat = Lieu(id: existant.id, nom: nom, parentId: _parent);
+      resultat = Lieu(
+        id: existant.id,
+        nom: nom,
+        parentId: _parent,
+        type: _type,
+      );
       await widget.lieux.enregistrer(resultat);
     }
     if (mounted) {
@@ -59,12 +98,13 @@ class _DialogueLieuState extends State<_DialogueLieu> {
 
   @override
   Widget build(BuildContext context) {
-    // Un lieu ne peut pas être rangé dans lui-même ni dans son contenu.
+    // Un lieu ne peut pas être rangé dans lui-même ni dans son contenu, ni
+    // dans un emplacement de l'autre type.
     final interdits = widget.lieu == null
         ? <String>{}
         : widget.lieux.descendantsEtSoi(widget.lieu!.id);
     final choix = widget.lieux
-        .arbre()
+        .arbre(type: _type)
         .where((n) => !interdits.contains(n.lieu.id))
         .toList();
     if (_parent != null && !choix.any((n) => n.lieu.id == _parent)) {
@@ -78,7 +118,34 @@ class _DialogueLieuState extends State<_DialogueLieu> {
         width: 360,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_typeAuChoix) ...[
+              SegmentedButton<TypeLieu>(
+                key: const Key('choix-type-lieu'),
+                segments: [
+                  for (final t in TypeLieu.values)
+                    ButtonSegment(
+                      value: t,
+                      label: Text('Pour les ${t.contenu}'),
+                      icon: Icon(iconeTypeLieu(t)),
+                    ),
+                ],
+                selected: {_type},
+                onSelectionChanged: (s) => setState(() => _type = s.first),
+              ),
+              const SizedBox(height: 16),
+            ] else
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(iconeTypeLieu(_type), size: 18),
+                    const SizedBox(width: 8),
+                    Text('Pour les ${_type.contenu}'),
+                  ],
+                ),
+              ),
             TextField(
               key: const Key('champ-nom-lieu'),
               controller: _nom,
@@ -155,6 +222,7 @@ class ChampLieu extends StatelessWidget {
   const ChampLieu({
     super.key,
     required this.lieux,
+    required this.type,
     required this.valeur,
     required this.onChanged,
     this.libelle = 'Emplacement',
@@ -165,13 +233,18 @@ class ChampLieu extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final String libelle;
 
+  /// Seuls les emplacements de ce type sont proposés.
+  final TypeLieu type;
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: lieux,
       builder: (context, _) {
-        final noeuds = lieux.arbre();
+        final noeuds = lieux.arbre(type: type);
         final v = noeuds.any((n) => n.lieu.id == valeur) ? valeur : null;
+        // Rien à choisir pour l'instant : on indique comment en créer.
+        final aucun = noeuds.isEmpty ? 'Aucun — créez-en un avec +' : 'Aucun';
         return Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -186,11 +259,8 @@ class ChampLieu extends StatelessWidget {
                   labelText: libelle,
                   prefixIcon: const Icon(Icons.place_outlined),
                 ),
-                hint: Text(
-                  noeuds.isEmpty ? 'Créez un emplacement avec +' : 'Aucun',
-                ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('Aucun')),
+                  DropdownMenuItem(value: null, child: Text(aucun)),
                   for (final n in noeuds)
                     DropdownMenuItem(
                       value: n.lieu.id,
@@ -198,7 +268,7 @@ class ChampLieu extends StatelessWidget {
                     ),
                 ],
                 selectedItemBuilder: (context) => [
-                  const Text('Aucun'),
+                  Text(aucun),
                   for (final n in noeuds)
                     Text(
                       lieux.chemin(n.lieu.id) ?? n.lieu.nom,
@@ -212,7 +282,12 @@ class ChampLieu extends StatelessWidget {
               tooltip: 'Nouvel emplacement',
               icon: const Icon(Icons.add_location_alt_outlined),
               onPressed: () async {
-                final cree = await editerLieu(context, lieux, parentId: v);
+                final cree = await editerLieu(
+                  context,
+                  lieux,
+                  parentId: v,
+                  type: type,
+                );
                 if (cree != null) {
                   onChanged(cree.id);
                 }
@@ -230,6 +305,7 @@ class FiltreLieu extends StatelessWidget {
   const FiltreLieu({
     super.key,
     required this.lieux,
+    required this.type,
     required this.valeur,
     required this.onChanged,
   });
@@ -237,6 +313,9 @@ class FiltreLieu extends StatelessWidget {
   final LieuxController lieux;
   final String? valeur;
   final ValueChanged<String?> onChanged;
+
+  /// Seuls les emplacements de ce type sont proposés.
+  final TypeLieu type;
 
   Future<void> _choisir(BuildContext context) async {
     const tous = '';
@@ -249,7 +328,7 @@ class FiltreLieu extends StatelessWidget {
             onPressed: () => Navigator.pop(context, tous),
             child: const Text('Tous les emplacements'),
           ),
-          for (final n in lieux.arbre())
+          for (final n in lieux.arbre(type: type))
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, n.lieu.id),
               child: _NomIndente(noeud: n),
@@ -276,3 +355,8 @@ class FiltreLieu extends StatelessWidget {
     );
   }
 }
+
+IconData iconeTypeLieu(TypeLieu t) => switch (t) {
+  TypeLieu.livres => Icons.menu_book_outlined,
+  TypeLieu.cave => Icons.wine_bar_outlined,
+};

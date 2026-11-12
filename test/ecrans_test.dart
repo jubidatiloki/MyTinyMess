@@ -169,7 +169,7 @@ void main() {
       (w) =>
           w.key is ValueKey<String> &&
           (w.key! as ValueKey<String>).value.startsWith('resume-lieu-') &&
-          (w.key! as ValueKey<String>).value != 'resume-lieu-aucun',
+          !(w.key! as ValueKey<String>).value.startsWith('resume-lieu-aucun'),
     );
     expect(salon, findsNWidgets(2));
     expect(
@@ -184,7 +184,7 @@ void main() {
   ) async {
     await lancer(tester);
     await ouvrir(tester, Section.emplacements);
-    expect(find.textContaining('Aucun emplacement'), findsOneWidget);
+    expect(find.textContaining('Aucun emplacement'), findsNWidgets(2));
 
     await tester.tap(find.byTooltip('Ajouter un emplacement'));
     await tester.pumpAndSettle();
@@ -206,7 +206,38 @@ void main() {
     await tester.tap(find.text('Confirmer'));
     await tester.pumpAndSettle();
     expect(find.text('Cellier'), findsNothing);
-    expect(find.textContaining('Aucun emplacement'), findsOneWidget);
+    expect(find.textContaining('Aucun emplacement'), findsNWidgets(2));
+
+    // Un emplacement pour la cave ne s'affiche que du côté cave.
+    await tester.tap(find.byKey(const Key('ajouter-lieu-cave')));
+    await tester.pumpAndSettle();
+    expect(find.text('Pour les bouteilles'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('champ-nom-lieu')), 'Cellier');
+    await tester.tap(find.byKey(const Key('valider-lieu')));
+    await tester.pumpAndSettle();
+    expect(find.text('Aucun emplacement pour les livres'), findsOneWidget);
+    expect(find.text('Cellier'), findsOneWidget);
+
+    await ouvrir(tester, Section.bibliotheque);
+    await tester.tap(find.byTooltip('Ajouter un livre'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('champ-lieu')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Aucun — créez-en un avec +'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await ouvrir(tester, Section.cave);
+    await tester.tap(find.byTooltip('Ajouter un vin'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('champ-lieu')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Aucun — créez-en un avec +'), findsNothing);
   });
 
   testWidgets('liste de souhaits : sans emplacement, à part des livres', (

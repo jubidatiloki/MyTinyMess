@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../models/lieu.dart';
 import '../../models/livre.dart';
 import '../../state/bibliotheque_controller.dart';
 import '../../state/lieux_controller.dart';
@@ -200,6 +201,7 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
               espace,
               ChampLieu(
                 key: const Key('champ-lieu'),
+                type: TypeLieu.livres,
                 lieux: widget.lieux,
                 valeur: _lieu,
                 libelle: 'Rangé où ?',
