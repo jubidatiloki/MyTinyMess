@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
+import '../state/lieux_controller.dart';
 import '../state/preferences_controller.dart';
 import '../widgets/menu_lateral.dart';
 import 'bibliotheque/liste_livres_screen.dart';
@@ -16,12 +17,19 @@ class RacineScreen extends StatefulWidget {
   const RacineScreen({
     super.key,
     required this.bibliotheque,
+    required this.lieuxLivres,
     required this.cave,
+    required this.lieuxCave,
     required this.preferences,
   });
 
+  /// Largeur d'écran à partir de laquelle le menu peut rester ouvert.
+  static const largeurMenuFixe = 720.0;
+
   final BibliothequeController bibliotheque;
+  final LieuxController lieuxLivres;
   final CaveController cave;
+  final LieuxController lieuxCave;
   final PreferencesController preferences;
 
   @override
@@ -33,39 +41,61 @@ class _RacineScreenState extends State<RacineScreen> {
 
   void _ouvrir(Section s) => setState(() => _section = s);
 
+  Widget _ecran(Widget? menu) => switch (_section) {
+    Section.accueil => TableauDeBordScreen(
+      bibliotheque: widget.bibliotheque,
+      cave: widget.cave,
+      onOuvrir: _ouvrir,
+      menu: menu,
+    ),
+    Section.bibliotheque => ListeLivresScreen(
+      controller: widget.bibliotheque,
+      lieux: widget.lieuxLivres,
+      menu: menu,
+    ),
+    Section.cave => ListeBouteillesScreen(
+      controller: widget.cave,
+      lieux: widget.lieuxCave,
+      menu: menu,
+    ),
+    Section.bazar => EcranAVenir(
+      section: Section.bazar,
+      icone: Icons.inventory_2_outlined,
+      menu: menu,
+    ),
+    Section.preferences => PreferencesScreen(
+      controller: widget.preferences,
+      menu: menu,
+    ),
+    Section.aPropos => AProposScreen(menu: menu),
+  };
+
   @override
   Widget build(BuildContext context) {
-    final menu = MenuLateral(courante: _section, onChoisir: _ouvrir);
-    return switch (_section) {
-      Section.accueil => TableauDeBordScreen(
-        bibliotheque: widget.bibliotheque,
-        cave: widget.cave,
-        onOuvrir: _ouvrir,
-        menu: menu,
+    return ListenableBuilder(
+      listenable: widget.preferences,
+      builder: (context, _) => LayoutBuilder(
+        builder: (context, contraintes) {
+          final fixe =
+              widget.preferences.menuFixe &&
+              contraintes.maxWidth >= RacineScreen.largeurMenuFixe;
+          final menu = MenuLateral(
+            courante: _section,
+            onChoisir: _ouvrir,
+            fixe: fixe,
+          );
+          if (!fixe) {
+            return _ecran(menu);
+          }
+          // Menu toujours visible à gauche, écran à droite (sans bouton ☰).
+          return Row(
+            children: [
+              SizedBox(width: MenuLateral.largeurFixe, child: menu),
+              Expanded(child: _ecran(null)),
+            ],
+          );
+        },
       ),
-      Section.bibliotheque => ListeLivresScreen(
-        controller: widget.bibliotheque,
-        menu: menu,
-      ),
-      Section.cave => ListeBouteillesScreen(
-        controller: widget.cave,
-        menu: menu,
-      ),
-      Section.bazar => EcranAVenir(
-        section: Section.bazar,
-        icone: Icons.inventory_2_outlined,
-        menu: menu,
-      ),
-      Section.contact => EcranAVenir(
-        section: Section.contact,
-        icone: Icons.mail_outline,
-        menu: menu,
-      ),
-      Section.preferences => PreferencesScreen(
-        controller: widget.preferences,
-        menu: menu,
-      ),
-      Section.aPropos => AProposScreen(menu: menu),
-    };
+    );
   }
 }

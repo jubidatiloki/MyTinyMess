@@ -22,9 +22,13 @@ class PreferencesController extends ChangeNotifier {
   final Depot _depot;
   ChoixTheme _theme = ChoixTheme.sombre;
   Section _ecranDemarrage = Section.accueil;
+  bool _menuFixe = true;
 
   ChoixTheme get theme => _theme;
   Section get ecranDemarrage => _ecranDemarrage;
+
+  /// Menu latéral toujours visible à gauche (sur les écrans assez larges).
+  bool get menuFixe => _menuFixe;
 
   Future<void> charger() async {
     final donnees = await _depot.lire(cle);
@@ -38,6 +42,7 @@ class PreferencesController extends ChangeNotifier {
         (s) => s.name == p['ecranDemarrage'],
         orElse: () => Section.accueil,
       );
+      _menuFixe = p['menuFixe'] as bool? ?? true;
     }
     notifyListeners();
   }
@@ -52,10 +57,19 @@ class PreferencesController extends ChangeNotifier {
     await _sauver();
   }
 
+  Future<void> changerMenuFixe(bool fixe) async {
+    _menuFixe = fixe;
+    await _sauver();
+  }
+
   Future<void> _sauver() async {
     notifyListeners();
     await _depot.ecrire(cle, [
-      {'theme': _theme.name, 'ecranDemarrage': _ecranDemarrage.name},
+      {
+        'theme': _theme.name,
+        'ecranDemarrage': _ecranDemarrage.name,
+        'menuFixe': _menuFixe,
+      },
     ]);
   }
 }

@@ -5,6 +5,7 @@ import 'data/depot.dart';
 import 'screens/racine_screen.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
+import 'state/lieux_controller.dart';
 import 'state/preferences_controller.dart';
 import 'theme.dart';
 
@@ -22,6 +23,8 @@ class MyTinyMessApp extends StatefulWidget {
 }
 
 class _MyTinyMessAppState extends State<MyTinyMessApp> {
+  late final LieuxController _lieuxLivres;
+  late final LieuxController _lieuxCave;
   late final BibliothequeController _bibliotheque;
   late final CaveController _cave;
   late final PreferencesController _preferences;
@@ -29,16 +32,26 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   @override
   void initState() {
     super.initState();
-    _bibliotheque = BibliothequeController(widget.depot)..charger();
-    _cave = CaveController(widget.depot)..charger();
+    final depot = widget.depot;
+    _lieuxLivres = LieuxController(depot, LieuxController.cleLivres)..charger();
+    _lieuxCave = LieuxController(depot, LieuxController.cleCave);
+    _bibliotheque = BibliothequeController(depot, lieux: _lieuxLivres)
+      ..charger();
+    _cave = CaveController(depot, lieux: _lieuxCave);
+    // Les anciennes zones de la cave deviennent des lieux une fois tout lu.
+    Future.wait([
+      _lieuxCave.charger(),
+      _cave.charger(),
+    ]).then((_) => _cave.migrerZones());
     _preferences =
-        widget.preferences ?? (PreferencesController(widget.depot)..charger());
+        widget.preferences ?? (PreferencesController(depot)..charger());
   }
 
   @override
   void dispose() {
-    _bibliotheque.dispose();
-    _cave.dispose();
+    for (final c in [_lieuxLivres, _lieuxCave, _bibliotheque, _cave]) {
+      c.dispose();
+    }
     if (widget.preferences == null) {
       _preferences.dispose();
     }
@@ -60,7 +73,9 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: RacineScreen(
           bibliotheque: _bibliotheque,
+          lieuxLivres: _lieuxLivres,
           cave: _cave,
+          lieuxCave: _lieuxCave,
           preferences: _preferences,
         ),
       ),

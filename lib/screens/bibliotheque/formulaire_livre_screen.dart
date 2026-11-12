@@ -3,18 +3,27 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/livre.dart';
 import '../../state/bibliotheque_controller.dart';
+import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
+import '../../widgets/lieux.dart';
+import '../../widgets/page.dart';
 
 /// Ajout (livre == null) ou modification d'un livre.
 class FormulaireLivreScreen extends StatefulWidget {
   const FormulaireLivreScreen({
     super.key,
     required this.controller,
+    required this.lieux,
     this.livre,
+    this.lieuParDefaut,
   });
 
   final BibliothequeController controller;
+  final LieuxController lieux;
   final Livre? livre;
+
+  /// Emplacement proposé pour un nouveau livre (filtre de la liste).
+  final String? lieuParDefaut;
 
   @override
   State<FormulaireLivreScreen> createState() => _FormulaireLivreScreenState();
@@ -34,6 +43,9 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
   late StatutLecture _statut = widget.livre?.statut ?? StatutLecture.aLire;
   late Possession _possession = widget.livre?.possession ?? Possession.possede;
   late int? _note = widget.livre?.note;
+  late String? _lieu = widget.livre != null
+      ? widget.livre!.lieuId
+      : widget.lieuParDefaut;
 
   bool get _modification => widget.livre != null;
 
@@ -79,6 +91,7 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
       datePret: chezMoi
           ? null
           : (memePret ? ancien.datePret : null) ?? DateTime.now(),
+      lieuId: _lieu,
     );
     await widget.controller.enregistrer(livre);
     if (mounted) {
@@ -98,7 +111,7 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const espace = SizedBox(height: 12);
+    const espace = SizedBox(height: 18);
     final datePret = widget.livre?.datePret;
     return Scaffold(
       appBar: AppBar(
@@ -120,7 +133,7 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
       body: Form(
         key: _form,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: margesCentrees(context),
           children: [
             TextFormField(
               key: const Key('champ-titre'),
@@ -165,6 +178,14 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
             TextFormField(
               controller: _isbn,
               decoration: const InputDecoration(labelText: 'ISBN'),
+            ),
+            espace,
+            ChampLieu(
+              key: const Key('champ-lieu'),
+              lieux: widget.lieux,
+              valeur: _lieu,
+              libelle: 'Rangé où ?',
+              onChanged: (v) => setState(() => _lieu = v),
             ),
             espace,
             DropdownButtonFormField<StatutLecture>(
@@ -232,7 +253,6 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
               decoration: const InputDecoration(
                 labelText: 'Notes',
                 alignLabelWithHint: true,
-                border: OutlineInputBorder(),
               ),
             ),
           ],

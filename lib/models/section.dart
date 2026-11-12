@@ -4,7 +4,6 @@ enum Section {
   bibliotheque('Ma bibliothèque'),
   cave('Ma cave'),
   bazar('Mon bazar'),
-  contact('Contact'),
   preferences('Préférences'),
   aPropos('À propos');
 
@@ -13,4 +12,7 @@ enum Section {
 
   /// Rubriques proposées comme écran d'ouverture de l'application.
   static const demarrages = [accueil, bibliotheque, cave];
+
+  /// Rubriques « collections » (le reste est séparé par un trait).
+  static const collections = [accueil, bibliotheque, cave, bazar];
 }

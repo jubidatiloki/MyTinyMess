@@ -2,13 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../../models/bouteille.dart';
 import '../../state/cave_controller.dart';
+import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
+import '../../widgets/lieux.dart';
+import '../../widgets/page.dart';
+import '../lieux_screen.dart';
 import 'formulaire_bouteille_screen.dart';
 
 class ListeBouteillesScreen extends StatefulWidget {
-  const ListeBouteillesScreen({super.key, required this.controller, this.menu});
+  const ListeBouteillesScreen({
+    super.key,
+    required this.controller,
+    required this.lieux,
+    this.menu,
+  });
 
   final CaveController controller;
+
+  /// Emplacements personnalisés de la cave.
+  final LieuxController lieux;
 
   /// Menu latéral (tiroir) affiché par le bouton ☰.
   final Widget? menu;
@@ -21,6 +33,7 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
   String _recherche = '';
   TypeVin? _type;
   bool _seulementEnStock = false;
+  String? _lieu;
 
   Future<void> _ouvrir([Bouteille? bouteille]) async {
     await Navigator.push(
@@ -28,7 +41,26 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
       MaterialPageRoute<void>(
         builder: (_) => FormulaireBouteilleScreen(
           controller: widget.controller,
+          lieux: widget.lieux,
           bouteille: bouteille,
+          lieuParDefaut: _lieu,
+        ),
+      ),
+    );
+  }
+
+  void _gererLieux() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => LieuxScreen(
+          lieux: widget.lieux,
+          titre: 'Emplacements de la cave',
+          elements: 'bouteilles',
+          contenu: (id) {
+            final n = widget.controller.nombreDans(id);
+            return n == 0 ? null : '$n bouteille${n > 1 ? 's' : ''}';
+          },
         ),
       ),
     );
@@ -36,33 +68,40 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: widget.menu,
-      appBar: AppBar(
-        title: ListenableBuilder(
-          listenable: widget.controller,
-          builder: (context, _) {
-            final n = widget.controller.totalBouteilles;
-            return Text('Ma cave ($n bouteille${n > 1 ? 's' : ''})');
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: null,
-        tooltip: 'Ajouter un vin',
-        onPressed: _ouvrir,
-        child: const Icon(Icons.add),
-      ),
-      body: ListenableBuilder(
+    return PageOdv(
+      titre: 'Ma cave',
+      titreWidget: ListenableBuilder(
         listenable: widget.controller,
+        builder: (context, _) {
+          final n = widget.controller.totalBouteilles;
+          return TitrePage(
+            titre: 'Ma cave',
+            sousTitre: '$n bouteille${n > 1 ? 's' : ''}',
+          );
+        },
+      ),
+      menu: widget.menu,
+      actions: [
+        IconButton(
+          tooltip: 'Emplacements',
+          icon: const Icon(Icons.shelves),
+          onPressed: _gererLieux,
+        ),
+      ],
+      bouton: BoutonAjout(libelle: 'Ajouter un vin', onPressed: _ouvrir),
+      corps: ListenableBuilder(
+        listenable: Listenable.merge([widget.controller, widget.lieux]),
         builder: (context, _) {
           if (!widget.controller.charge) {
             return const Center(child: CircularProgressIndicator());
           }
+          // Lieu filtré supprimé entre-temps : on revient à « tous ».
+          final lieu = widget.lieux.parId(_lieu ?? '') == null ? null : _lieu;
           final bouteilles = widget.controller.rechercher(
             texte: _recherche,
             type: _type,
             seulementEnStock: _seulementEnStock,
+            lieuId: lieu,
           );
           return Column(
             children: [
@@ -74,8 +113,17 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
                 height: 48,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
+                    if (widget.lieux.elements.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FiltreLieu(
+                          lieux: widget.lieux,
+                          valeur: lieu,
+                          onChanged: (v) => setState(() => _lieu = v),
+                        ),
+                      ),
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: FilterChip(
@@ -107,10 +155,13 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
                             : 'Aucun vin ne correspond.',
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 80),
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
                         itemCount: bouteilles.length,
                         itemBuilder: (context, i) => _LigneBouteille(
                           bouteille: bouteilles[i],
+                          emplacement: widget.controller.emplacementDe(
+                            bouteilles[i],
+                          ),
                           onTap: () => _ouvrir(bouteilles[i]),
                           onAjouter: () => widget.controller.ajouterBouteilles(
                             bouteilles[i].id,
@@ -143,12 +194,14 @@ Color couleurVin(TypeVin type) => switch (type) {
 class _LigneBouteille extends StatelessWidget {
   const _LigneBouteille({
     required this.bouteille,
+    required this.emplacement,
     required this.onTap,
     required this.onAjouter,
     required this.onRetirer,
   });
 
   final Bouteille bouteille;
+  final String emplacement;
   final VoidCallback onTap;
   final VoidCallback onAjouter;
   final VoidCallback onRetirer;
@@ -159,8 +212,8 @@ class _LigneBouteille extends StatelessWidget {
     final titre = [b.nom, if (b.millesime != null) '${b.millesime}'].join(' ');
     return Opacity(
       opacity: b.enStock ? 1 : 0.5,
-      child: ListTile(
-        leading: Icon(Icons.wine_bar, color: couleurVin(b.type)),
+      child: CarteLigne(
+        leading: IconeCarree(Icons.wine_bar, couleur: couleurVin(b.type)),
         title: Text(titre, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Row(
           children: [
@@ -168,7 +221,7 @@ class _LigneBouteille extends StatelessWidget {
             const SizedBox(width: 2),
             Flexible(
               child: Text(
-                b.emplacement.libelle,
+                emplacement.isEmpty ? 'Emplacement non précisé' : emplacement,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

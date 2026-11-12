@@ -11,20 +11,22 @@ Application Flutter (Android + web + Windows) pour gérer **sa bibliothèque** (
 
 ## Architecture (`lib/`)
 - `main.dart` (stockage sur l'appareil, préférences chargées avant l'affichage) → `app.dart` (`MyTinyMessApp`, thème selon les préférences, français) → `screens/racine_screen.dart` (affiche la rubrique choisie dans le menu latéral `widgets/menu_lateral.dart`).
-- `theme.dart` : palette `Couleurs` (vert `#4A9D60` des barres et du menu, fond `#454545` en sombre, `#F2F2F2` en clair) et `construireTheme`. **Sombre par défaut.**
+- `theme.dart` : `vertOdv` (#4A9D60, accents seulement), `PaletteOdv` (ThemeExtension, `PaletteOdv.de(context)` : menu, pastille de sélection, cartes, champs, séparateurs, vert doux des titres de section ; variantes `sombre` / `clair`) et `construireTheme` (barre de titre discrète couleur du fond, champs remplis sans contour, cartes arrondies sans ombre, bouton « + » large). **Sombre par défaut.** Design « moderne » validé le 12/11/2026 : fond #262827, menu #1E201F, cartes #303331.
+- `widgets/page.dart` : `PageOdv` (titre + sous-titre alignés sur la colonne de contenu, largeur max `largeurContenu` = 760 px via `Centre`), `TitreSection`, `CarteGroupe` (réglages en carte), `CarteLigne` (ligne de liste en carte), `IconeCarree`, `BoutonAjout` (garde le libellé comme tooltip), `margesCentrees` (formulaires). Toute nouvelle page passe par `PageOdv`.
 - `version.dart` : `kVersionApp`, toujours en phase avec `version:` de `pubspec.yaml` (affichée en bas du menu et dans « À propos »).
-- `models/section.dart` : rubriques du menu (Vue d'ensemble, Ma bibliothèque, Ma cave, Mon bazar, Contact, Préférences, À propos). Mon bazar et Contact sont encore des pages « Bientôt disponible » (`screens/pages_simples.dart`).
+- `models/section.dart` : rubriques du menu (Vue d'ensemble, Ma bibliothèque, Ma cave, Mon bazar, Préférences, À propos). Mon bazar est encore une page « Bientôt disponible » (`screens/pages_simples.dart`). Le menu (`widgets/menu_lateral.dart`) est **fixé à gauche par défaut** si l'écran fait ≥ 720 px (`RacineScreen.largeurMenuFixe`) et que la préférence `menuFixe` est active ; sinon c'est un tiroir ouvert par ☰.
+- **Emplacements personnalisés** : `models/lieu.dart` (`Lieu` : nom + `parentId`, emboîtables), `state/lieux_controller.dart` (`LieuxController` : `chemin` « Salon › Étagère 1 », `arbre`, `descendantsEtSoi`, suppression = le contenu remonte d'un niveau ; clés séparées `lieuxLivres` / `lieuxCave`), `widgets/lieux.dart` (`editerLieu`, `ChampLieu` avec bouton de création, `FiltreLieu`), `screens/lieux_screen.dart` (gestion, bouton « Emplacements » dans la barre des listes). Un lieu supprimé laisse les livres / bouteilles sans emplacement (référence ignorée).
 - `screens/tableau_de_bord_screen.dart` : Vue d'ensemble, tuiles `TuileCompteur` (photo `assets/images/bibliotheque.jpg` / `cave.jpg`, dégradé + icône si absente).
 - `state/preferences_controller.dart` + `screens/preferences_screen.dart` : thème (sombre / clair / comme l'appareil) et écran à l'ouverture, enregistrés sous la clé `preferences` du `Depot`.
-- `models/` : `livre.dart` (`Livre`, `StatutLecture`, `Possession` : chez moi / prêté / emprunté), `bouteille.dart` (`Bouteille`, `TypeVin`, `Emplacement` zone + rangée + colonne, `Mouvement` = historique des entrées/sorties).
+- `models/` : `livre.dart` (`Livre` + `lieuId`, `StatutLecture`, `Possession` : chez moi / prêté / emprunté), `bouteille.dart` (`Bouteille`, `TypeVin`, `Emplacement` = `lieuId` + rangée + colonne ; `ancienneZone` = texte libre des versions ≤ 0.2, converti en lieu au démarrage par `CaveController.migrerZones`, `Mouvement` = historique des entrées/sorties).
 - `data/depot.dart` : `Depot` (listes JSON par clé), `DepotPreferences` (shared_preferences), `DepotMemoire` (tests).
-- `state/` : `CollectionController` (base : charger / enregistrer / supprimer, `normaliser` pour la recherche sans accents), `BibliothequeController` (+ `FiltreLivres`), `CaveController` (ajout / retrait de bouteilles, total).
+- `state/` : `CollectionController` (base : charger / enregistrer / supprimer, `normaliser` pour la recherche sans accents), `BibliothequeController` et `CaveController` (champ `lieux`, `emplacementDe`, `nombreDans`, filtre `lieuId` qui inclut les sous-emplacements ; cave : ajout / retrait de bouteilles, total).
 - `screens/bibliotheque/`, `screens/cave/` : listes (recherche + filtres) et formulaires ; `widgets/communs.dart` (dates, champ de recherche, liste vide, confirmation).
 
 ## Pièges connus (tests widget)
 - `ListView` paresseuse : `scrollUntilVisible` avant de remplir un champ hors écran.
-- Navigation dans les tests : `find.byIcon(Icons.menu)` puis `find.byKey(Key('menu-<section>'))` (le libellé du menu peut aussi être le titre de l'écran).
-- `FloatingActionButton` : garder `heroTag: null`.
+- Navigation dans les tests : helper `ouvrir` (tape ☰ seulement s'il existe, puis `Key('menu-<section>')`). L'écran de test fait 800 px : le menu y est **fixé** ; `ecranTelephone(tester)` simule 400 px. Formulaires longs : `scrollUntilVisible` + `ensureVisible` avant de toucher une liste déroulante en bas.
+- `FloatingActionButton` : garder `heroTag: null` (déjà fait dans `BoutonAjout`). Le sous-titre des listes (« 3 bouteilles ») est un texte séparé du titre.
 - `find.text` doit être unique.
 
 ## Environnement (Windows)

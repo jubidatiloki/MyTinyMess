@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../models/section.dart';
+import '../theme.dart';
 import '../version.dart';
 import '../widgets/communs.dart';
+import '../widgets/page.dart';
 
-/// Rubrique pas encore construite (Mon bazar, Contact…).
+/// Rubrique pas encore construite (Mon bazar…).
 class EcranAVenir extends StatelessWidget {
   const EcranAVenir({
     super.key,
@@ -19,10 +21,10 @@ class EcranAVenir extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: menu,
-      appBar: AppBar(title: Text(section.libelle)),
-      body: ListeVide(icone: icone, message: 'Bientôt disponible.'),
+    return PageOdv(
+      titre: section.libelle,
+      menu: menu,
+      corps: ListeVide(icone: icone, message: 'Bientôt disponible.'),
     );
   }
 }
@@ -34,21 +36,65 @@ class AProposScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textes = Theme.of(context).textTheme;
-    return Scaffold(
-      drawer: menu,
-      appBar: AppBar(title: Text(Section.aPropos.libelle)),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+    final p = PaletteOdv.de(context);
+    return PageOdv(
+      titre: Section.aPropos.libelle,
+      menu: menu,
+      corps: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          Text('My Tiny Mess', style: textes.headlineSmall),
-          const SizedBox(height: 4),
-          Text('Version $kVersionApp', style: textes.bodySmall),
-          const SizedBox(height: 16),
-          const Text(
-            'Pour gérer sa bibliothèque (livres, notes, prêts et emprunts) '
-            'et sa cave à vin (bouteilles, emplacements, entrées et sorties).\n\n'
-            'Les données restent sur l\'appareil.',
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: vertOdv,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.auto_stories,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'My Tiny Mess',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Version $kVersionApp',
+                              style: TextStyle(color: p.texteSecondaire),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Pour gérer sa bibliothèque (livres, notes, prêts et '
+                    'emprunts) et sa cave à vin (bouteilles, emplacements, '
+                    'entrées et sorties).\n\n'
+                    'Les données restent sur l\'appareil.',
+                    style: TextStyle(height: 1.5),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

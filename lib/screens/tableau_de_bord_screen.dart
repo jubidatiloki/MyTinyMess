@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
+import '../widgets/page.dart';
 
 /// « Vue d'ensemble » : une tuile par collection avec son compteur.
 class TableauDeBordScreen extends StatelessWidget {
@@ -21,19 +22,20 @@ class TableauDeBordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: menu,
-      appBar: AppBar(title: Text(Section.accueil.libelle)),
-      body: ListenableBuilder(
+    return PageOdv(
+      titre: Section.accueil.libelle,
+      sousTitre: 'Vos collections en un coup d\'œil',
+      menu: menu,
+      corps: ListenableBuilder(
         listenable: Listenable.merge([bibliotheque, cave]),
         builder: (context, _) {
           final livres = bibliotheque.elements.length;
           final bouteilles = cave.totalBouteilles;
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             child: Wrap(
-              spacing: 14,
-              runSpacing: 14,
+              spacing: 16,
+              runSpacing: 16,
               children: [
                 TuileCompteur(
                   key: const Key('tuile-livres'),
@@ -75,7 +77,7 @@ class TuileCompteur extends StatelessWidget {
     required this.onTap,
   });
 
-  static const taille = 124.0;
+  static const taille = 156.0;
 
   final int nombre;
   final String libelle;
@@ -104,13 +106,17 @@ class TuileCompteur extends StatelessWidget {
       width: taille,
       height: taille,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Colors.black54, blurRadius: 6, offset: Offset(3, 4)),
+          BoxShadow(
+            color: Colors.black38,
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -131,7 +137,7 @@ class TuileCompteur extends StatelessWidget {
                   left: 8,
                   top: 4,
                   right: 8,
-                  height: 64,
+                  height: 80,
                   child: FittedBox(
                     alignment: Alignment.centerLeft,
                     fit: BoxFit.scaleDown,
@@ -139,7 +145,7 @@ class TuileCompteur extends StatelessWidget {
                       '$nombre',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 52,
+                        fontSize: 64,
                         fontWeight: FontWeight.w300,
                         shadows: ombreTexte,
                       ),

@@ -10,12 +10,18 @@ enum TypeVin {
   final String libelle;
 }
 
-/// Endroit exact où sont rangées les bouteilles.
+/// Endroit exact où sont rangées les bouteilles : un lieu personnalisé
+/// (cave, casier, armoire… voir `Lieu`) et une position dans ce lieu.
 class Emplacement {
-  const Emplacement({required this.zone, this.rangee, this.colonne});
+  const Emplacement({
+    this.lieuId,
+    this.rangee,
+    this.colonne,
+    this.ancienneZone,
+  });
 
-  /// Cave, casier, armoire… (ex. « Casier du fond »).
-  final String zone;
+  /// Lieu personnalisé (null = pas encore rangé).
+  final String? lieuId;
 
   /// Rangée / étagère (ex. « 3 » ou « B »).
   final String? rangee;
@@ -23,26 +29,37 @@ class Emplacement {
   /// Colonne / position dans la rangée.
   final String? colonne;
 
-  String get libelle {
-    final morceaux = [
-      zone,
-      if (rangee != null && rangee!.isNotEmpty) 'rangée $rangee',
-      if (colonne != null && colonne!.isNotEmpty) 'colonne $colonne',
-    ];
-    return morceaux.join(' · ');
-  }
+  /// Zone saisie en texte libre avant la version 0.3 : transformée en lieu
+  /// au chargement (voir `CaveController.migrerZones`).
+  final String? ancienneZone;
+
+  /// « Cave › Casier A · rangée 2 · colonne B ».
+  /// [cheminLieu] : chemin du lieu, donné par `LieuxController.chemin`.
+  String libelle(String? cheminLieu) => [
+    cheminLieu ?? ancienneZone,
+    if (rangee != null && rangee!.isNotEmpty) 'rangée $rangee',
+    if (colonne != null && colonne!.isNotEmpty) 'colonne $colonne',
+  ].whereType<String>().where((t) => t.isNotEmpty).join(' · ');
+
+  Emplacement avecLieu(String? id) =>
+      Emplacement(lieuId: id, rangee: rangee, colonne: colonne);
 
   Map<String, dynamic> toJson() => {
-    'zone': zone,
+    if (lieuId != null) 'lieuId': lieuId,
     if (rangee != null) 'rangee': rangee,
     if (colonne != null) 'colonne': colonne,
+    if (ancienneZone != null) 'zone': ancienneZone,
   };
 
-  factory Emplacement.fromJson(Map<String, dynamic> json) => Emplacement(
-    zone: json['zone'] as String? ?? '',
-    rangee: json['rangee'] as String?,
-    colonne: json['colonne'] as String?,
-  );
+  factory Emplacement.fromJson(Map<String, dynamic> json) {
+    final zone = (json['zone'] as String?)?.trim();
+    return Emplacement(
+      lieuId: json['lieuId'] as String?,
+      rangee: json['rangee'] as String?,
+      colonne: json['colonne'] as String?,
+      ancienneZone: zone == null || zone.isEmpty ? null : zone,
+    );
+  }
 }
 
 /// Une entrée ou une sortie de bouteilles (historique de la cave).
@@ -76,7 +93,7 @@ class Bouteille {
   const Bouteille({
     required this.id,
     required this.nom,
-    required this.emplacement,
+    this.emplacement = const Emplacement(),
     this.type = TypeVin.rouge,
     this.producteur,
     this.appellation,
@@ -129,18 +146,8 @@ class Bouteille {
   }
 
   Bouteille _avecMouvement(int delta, String? commentaire, DateTime? le) =>
-      Bouteille(
-        id: id,
-        nom: nom,
-        emplacement: emplacement,
-        type: type,
-        producteur: producteur,
-        appellation: appellation,
-        region: region,
-        millesime: millesime,
-        aBoireAvant: aBoireAvant,
+      _copie(
         quantite: quantite + delta,
-        notes: notes,
         mouvements: [
           ...mouvements,
           Mouvement(
@@ -150,6 +157,27 @@ class Bouteille {
           ),
         ],
       );
+
+  Bouteille avecEmplacement(Emplacement e) => _copie(emplacement: e);
+
+  Bouteille _copie({
+    Emplacement? emplacement,
+    int? quantite,
+    List<Mouvement>? mouvements,
+  }) => Bouteille(
+    id: id,
+    nom: nom,
+    emplacement: emplacement ?? this.emplacement,
+    type: type,
+    producteur: producteur,
+    appellation: appellation,
+    region: region,
+    millesime: millesime,
+    aBoireAvant: aBoireAvant,
+    quantite: quantite ?? this.quantite,
+    notes: notes,
+    mouvements: mouvements ?? this.mouvements,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,

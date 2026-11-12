@@ -17,19 +17,30 @@ void main() {
     return depot;
   }
 
-  /// Ouvre le menu latéral (☰) et choisit une rubrique.
+  /// Choisit une rubrique dans le menu latéral (en l'ouvrant avec ☰ s'il
+  /// n'est pas fixé à gauche).
   Future<void> ouvrir(WidgetTester tester, Section section) async {
-    await tester.tap(find.byIcon(Icons.menu));
-    await tester.pumpAndSettle();
+    final burger = find.byIcon(Icons.menu);
+    if (burger.evaluate().isNotEmpty) {
+      await tester.tap(burger);
+      await tester.pumpAndSettle();
+    }
     await tester.tap(find.byKey(Key('menu-${section.name}')));
     await tester.pumpAndSettle();
+  }
+
+  /// Simule un écran de téléphone (le menu n'est alors jamais fixé).
+  void ecranTelephone(WidgetTester tester) {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
   }
 
   testWidgets('au démarrage : vue d\'ensemble avec compteurs à zéro', (
     tester,
   ) async {
     await lancer(tester);
-    expect(find.text('Vue d\'ensemble'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'Vue d\'ensemble'), findsOneWidget);
     expect(find.text('livre'), findsOneWidget);
     expect(find.text('bouteille'), findsOneWidget);
     expect(find.text('0'), findsNWidgets(2));
@@ -45,13 +56,7 @@ void main() {
     await biblio.enregistrer(const Livre(id: '2', titre: 'Zadig'));
     final cave = CaveController(depot);
     await cave.charger();
-    await cave.enregistrer(
-      const Bouteille(
-        id: 'b',
-        nom: 'Chinon',
-        emplacement: Emplacement(zone: 'Cellier'),
-      ).ajouter(5),
-    );
+    await cave.enregistrer(const Bouteille(id: 'b', nom: 'Chinon').ajouter(5));
 
     await lancer(tester, depot);
     expect(find.text('2'), findsOneWidget);
@@ -61,7 +66,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('tuile-bouteilles')));
     await tester.pumpAndSettle();
-    expect(find.text('Ma cave (5 bouteilles)'), findsOneWidget);
+    expect(find.text('5 bouteilles'), findsOneWidget);
   });
 
   testWidgets('menu latéral : toutes les rubriques s\'ouvrent', (tester) async {
@@ -70,12 +75,92 @@ void main() {
     expect(find.textContaining('Aucun livre'), findsOneWidget);
     await ouvrir(tester, Section.bazar);
     expect(find.text('Bientôt disponible.'), findsOneWidget);
-    await ouvrir(tester, Section.contact);
-    expect(find.text('Contact'), findsOneWidget);
+    expect(find.text('Contact'), findsNothing); // rubrique retirée
     await ouvrir(tester, Section.aPropos);
-    expect(find.textContaining('Version'), findsOneWidget);
+    expect(find.text('My Tiny Mess'), findsWidgets);
     await ouvrir(tester, Section.accueil);
     expect(find.byKey(const Key('tuile-livres')), findsOneWidget);
+  });
+
+  testWidgets('menu latéral fixe sur grand écran, désactivable', (
+    tester,
+  ) async {
+    await lancer(tester); // écran de test : 800 px de large
+    // Ouvert par défaut : visible sans bouton ☰.
+    expect(find.byKey(const Key('menu-cave')), findsOneWidget);
+    expect(find.byIcon(Icons.menu), findsNothing);
+
+    await ouvrir(tester, Section.preferences);
+    await tester.tap(find.byKey(const Key('pref-menu-fixe')));
+    await tester.pumpAndSettle();
+    // Menu replié : il revient derrière le bouton ☰.
+    expect(find.byKey(const Key('menu-cave')), findsNothing);
+    expect(find.byIcon(Icons.menu), findsOneWidget);
+    await ouvrir(tester, Section.cave);
+    expect(find.text('0 bouteille'), findsOneWidget);
+  });
+
+  testWidgets('sur téléphone, le menu s\'ouvre avec ☰', (tester) async {
+    ecranTelephone(tester);
+    await lancer(tester);
+    expect(find.byKey(const Key('menu-cave')), findsNothing);
+    await ouvrir(tester, Section.bibliotheque);
+    expect(find.widgetWithText(AppBar, 'Ma bibliothèque'), findsOneWidget);
+  });
+
+  testWidgets('bibliothèque : créer des emplacements et y ranger un livre', (
+    tester,
+  ) async {
+    final depot = await lancer(tester);
+    await ouvrir(tester, Section.bibliotheque);
+
+    // Écran des emplacements : « Salon », puis « Étagère 1 » dedans.
+    await tester.tap(find.byTooltip('Emplacements'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Ajouter un emplacement'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-nom-lieu')), 'Salon');
+    await tester.tap(find.byKey(const Key('valider-lieu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Ajouter dedans'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('champ-nom-lieu')),
+      'Étagère 1',
+    );
+    await tester.tap(find.byKey(const Key('valider-lieu')));
+    await tester.pumpAndSettle();
+    expect(find.text('Salon'), findsOneWidget);
+    expect(find.text('Étagère 1'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // Nouveau livre rangé sur l'étagère.
+    await tester.tap(find.byTooltip('Ajouter un livre'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-titre')), 'Dune');
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('champ-lieu')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Aucun'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Étagère 1').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Salon › Étagère 1'), findsOneWidget);
+    final livre = Livre.fromJson((await depot.lire('livres')).single);
+    expect(livre.lieuId, isNotNull);
+
+    // Filtre par emplacement : le salon contient l'étagère, donc le livre.
+    await tester.tap(find.byKey(const Key('filtre-lieu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Salon').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Dune'), findsOneWidget);
   });
 
   testWidgets('préférences : thème clair et écran d\'ouverture enregistrés', (
@@ -91,7 +176,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(modeActuel(), ThemeMode.light);
 
-    await tester.tap(find.byKey(const Key('demarrage-cave')));
+    await tester.tap(find.byKey(const Key('pref-demarrage')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ma cave').last);
     await tester.pumpAndSettle();
 
     // Relu par un nouveau contrôleur : c'est bien enregistré.
@@ -116,6 +203,13 @@ void main() {
     await tester.enterText(find.byKey(const Key('champ-titre')), 'Dune');
     await tester.enterText(find.byKey(const Key('champ-auteur')), 'Herbert');
 
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('champ-possession')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.byKey(const Key('champ-possession')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('champ-possession')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Prêté').last);
@@ -143,21 +237,31 @@ void main() {
   testWidgets('cave : ajouter un vin, puis + et -', (tester) async {
     await lancer(tester);
     await ouvrir(tester, Section.cave);
-    expect(find.text('Ma cave (0 bouteille)'), findsOneWidget);
+    expect(find.text('0 bouteille'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Ajouter un vin'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('champ-nom')), 'Chinon');
     await tester.enterText(find.byKey(const Key('champ-millesime')), '2020');
     await tester.enterText(find.byKey(const Key('champ-quantite')), '3');
-    await tester.enterText(find.byKey(const Key('champ-zone')), 'Cellier');
+    // Emplacement créé directement depuis le formulaire (bouton à côté).
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('champ-rangee')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byTooltip('Nouvel emplacement'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-nom-lieu')), 'Cellier');
+    await tester.tap(find.byKey(const Key('valider-lieu')));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('champ-rangee')), '2');
     await tester.tap(find.byTooltip('Enregistrer'));
     await tester.pumpAndSettle();
 
     expect(find.text('Chinon 2020'), findsOneWidget);
     expect(find.text('Cellier · rangée 2'), findsOneWidget);
-    expect(find.text('Ma cave (3 bouteilles)'), findsOneWidget);
+    expect(find.text('3 bouteilles'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Retirer une bouteille'));
     await tester.pumpAndSettle();
@@ -165,7 +269,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Ajouter une bouteille'));
     await tester.pumpAndSettle();
-    expect(find.text('Ma cave (2 bouteilles)'), findsOneWidget);
+    expect(find.text('2 bouteilles'), findsOneWidget);
 
     // L'historique est visible dans la fiche.
     await tester.tap(find.text('Chinon 2020'));

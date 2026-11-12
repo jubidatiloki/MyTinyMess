@@ -3,18 +3,27 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/bouteille.dart';
 import '../../state/cave_controller.dart';
+import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
+import '../../widgets/lieux.dart';
+import '../../widgets/page.dart';
 
 /// Ajout (bouteille == null) ou modification d'un vin de la cave.
 class FormulaireBouteilleScreen extends StatefulWidget {
   const FormulaireBouteilleScreen({
     super.key,
     required this.controller,
+    required this.lieux,
     this.bouteille,
+    this.lieuParDefaut,
   });
 
   final CaveController controller;
+  final LieuxController lieux;
   final Bouteille? bouteille;
+
+  /// Emplacement proposé pour un nouveau vin (filtre de la liste).
+  final String? lieuParDefaut;
 
   @override
   State<FormulaireBouteilleScreen> createState() =>
@@ -35,7 +44,9 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
     text: _b?.aBoireAvant?.toString(),
   );
   late final _quantite = TextEditingController(text: '1');
-  late final _zone = TextEditingController(text: _b?.emplacement.zone);
+  late String? _lieu = _b != null
+      ? _b.emplacement.lieuId
+      : widget.lieuParDefaut;
   late final _rangee = TextEditingController(text: _b?.emplacement.rangee);
   late final _colonne = TextEditingController(text: _b?.emplacement.colonne);
   late final _notes = TextEditingController(text: _b?.notes);
@@ -51,7 +62,6 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
     _millesime,
     _aBoireAvant,
     _quantite,
-    _zone,
     _rangee,
     _colonne,
     _notes,
@@ -84,7 +94,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
       millesime: entierOuNull(_millesime.text),
       aBoireAvant: entierOuNull(_aBoireAvant.text),
       emplacement: Emplacement(
-        zone: _zone.text.trim(),
+        lieuId: _lieu,
         rangee: texteOuNull(_rangee.text),
         colonne: texteOuNull(_colonne.text),
       ),
@@ -115,7 +125,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const espace = SizedBox(height: 12);
+    const espace = SizedBox(height: 18);
     const ecart = SizedBox(width: 12);
     final titres = Theme.of(context).textTheme.titleSmall;
     final b = _b;
@@ -139,7 +149,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
       body: Form(
         key: _form,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: margesCentrees(context),
           children: [
             TextFormField(
               key: const Key('champ-nom'),
@@ -227,16 +237,12 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
             const SizedBox(height: 24),
             Text('Emplacement', style: titres),
             espace,
-            TextFormField(
-              key: const Key('champ-zone'),
-              controller: _zone,
-              decoration: const InputDecoration(
-                labelText: 'Zone *',
-                hintText: 'Cave, casier du fond, armoire…',
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Indiquez où est rangé le vin'
-                  : null,
+            ChampLieu(
+              key: const Key('champ-lieu'),
+              lieux: widget.lieux,
+              valeur: _lieu,
+              libelle: 'Lieu',
+              onChanged: (v) => setState(() => _lieu = v),
             ),
             espace,
             Row(
@@ -266,7 +272,6 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
               decoration: const InputDecoration(
                 labelText: 'Notes de dégustation',
                 alignLabelWithHint: true,
-                border: OutlineInputBorder(),
               ),
             ),
             if (b != null && b.mouvements.isNotEmpty) ...[

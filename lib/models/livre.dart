@@ -46,6 +46,7 @@ class Livre {
     this.possession = Possession.possede,
     this.personne,
     this.datePret,
+    this.lieuId,
   });
 
   final String id;
@@ -66,6 +67,9 @@ class Livre {
   /// Personne à qui le livre est prêté, ou qui me l'a prêté.
   final String? personne;
   final DateTime? datePret;
+
+  /// Emplacement personnalisé où le livre est rangé (voir `Lieu`).
+  final String? lieuId;
 
   bool get estChezMoi => possession == Possession.possede;
 
@@ -105,6 +109,7 @@ class Livre {
     possession: possession,
     personne: personne,
     datePret: datePret,
+    lieuId: lieuId,
   );
 
   Map<String, dynamic> toJson() => {
@@ -120,6 +125,7 @@ class Livre {
     'possession': possession.name,
     if (personne != null) 'personne': personne,
     if (datePret != null) 'datePret': datePret!.toIso8601String(),
+    if (lieuId != null) 'lieuId': lieuId,
   };
 
   factory Livre.fromJson(Map<String, dynamic> json) => Livre(
@@ -143,5 +149,6 @@ class Livre {
     ),
     personne: json['personne'] as String?,
     datePret: DateTime.tryParse(json['datePret'] as String? ?? ''),
+    lieuId: json['lieuId'] as String?,
   );
 }

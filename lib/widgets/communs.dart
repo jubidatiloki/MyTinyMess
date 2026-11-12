@@ -27,12 +27,12 @@ class ChampRecherche extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: TextField(
         decoration: InputDecoration(
           hintText: indice,
           prefixIcon: const Icon(Icons.search),
-          border: const OutlineInputBorder(),
+
           isDense: true,
         ),
         onChanged: onChanged,
