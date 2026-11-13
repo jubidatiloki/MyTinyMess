@@ -11,3 +11,9 @@ Recherche sans accents et filtres dans les deux listes. Les données sont enregi
 ## Utilisation
 - `lancer.bat` : ouvre directement l'application dans le navigateur (Chrome). Pour les autres versions : `lancer.bat windows` ou `lancer.bat android`.
 - `verifier.bat` : vérifie le code et lance les tests (résultat dans `verification.log`).
+- `livrer.bat` : construit l'APK Android et la version web autonome dans le dossier `livraison`.
+
+## Installer sans Flutter
+Téléchargez la dernière version dans les [releases GitHub](https://github.com/jubidatiloki/MyTinyMess/releases) :
+- **Android** : le fichier `.apk` (autoriser l'installation depuis cette source si le téléphone le demande).
+- **Ordinateur** (Windows, Mac, Linux) : le fichier `my_tiny_mess_web_….zip`, à décompresser, puis `Ouvrir My Tiny Mess.bat` (Windows) ou `sh ouvrir.sh` (Mac / Linux).

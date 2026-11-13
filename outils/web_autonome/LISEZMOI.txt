@@ -1,0 +1,28 @@
+MY TINY MESS - version web
+==========================
+
+Gérer sa bibliothèque et sa cave à vin, dans le navigateur, sans rien installer.
+
+OUVRIR L'APPLICATION
+--------------------
+Windows : double-cliquez sur « Ouvrir My Tiny Mess.bat ».
+          Une petite fenêtre noire s'ouvre, puis le navigateur.
+          Laissez la fenêtre noire ouverte pendant l'utilisation ;
+          fermez-la pour arrêter l'application.
+          (Si Windows affiche « Windows a protégé votre ordinateur » :
+          « Informations complémentaires » puis « Exécuter quand même ».)
+
+Mac / Linux : ouvrez un terminal dans ce dossier et tapez :  sh ouvrir.sh
+          Laissez le terminal ouvert ; Ctrl+C pour arrêter.
+
+L'application s'ouvre à l'adresse http://localhost:8095
+
+VOS DONNÉES
+-----------
+Les livres, bouteilles et emplacements sont enregistrés dans le navigateur
+de cet ordinateur (ils restent après fermeture). Ils ne sont pas partagés
+avec un autre ordinateur ni un autre navigateur.
+Pour les garder, utilisez toujours ce dossier et le même navigateur, et ne
+videz pas les « données de site » de localhost.
+
+Ne déplacez pas le dossier « app » ni le dossier « outils ».
