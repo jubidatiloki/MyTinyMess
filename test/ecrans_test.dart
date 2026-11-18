@@ -10,6 +10,7 @@ import 'package:my_tiny_mess/models/type_bouteille.dart';
 import 'package:my_tiny_mess/state/bibliotheque_controller.dart';
 import 'package:my_tiny_mess/state/cave_controller.dart';
 import 'package:my_tiny_mess/state/preferences_controller.dart';
+import 'package:my_tiny_mess/widgets/icone_app.dart';
 
 void main() {
   Future<DepotMemoire> lancer(WidgetTester tester, [DepotMemoire? d]) async {
@@ -46,6 +47,8 @@ void main() {
     expect(find.text('livre'), findsOneWidget);
     expect(find.text('bouteille'), findsOneWidget);
     expect(find.text('aliment'), findsOneWidget);
+    // Logo de l'application (l'étagère) en haut du menu.
+    expect(find.byType(IconeApp), findsOneWidget);
     expect(find.text('0'), findsNWidgets(3));
   });
 

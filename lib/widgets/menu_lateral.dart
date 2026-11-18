@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/section.dart';
 import '../theme.dart';
 import '../version.dart';
+import 'icone_app.dart';
 
 IconData iconeSection(Section s) => switch (s) {
   Section.accueil => Icons.dashboard_outlined,
@@ -58,19 +59,7 @@ class MenuLateral extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
                 child: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: vertOdv,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.auto_stories,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
+                    const IconeApp(taille: 36),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(

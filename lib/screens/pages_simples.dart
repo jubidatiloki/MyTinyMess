@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/section.dart';
 import '../theme.dart';
 import '../version.dart';
+
 import '../widgets/communs.dart';
+import '../widgets/icone_app.dart';
 import '../widgets/page.dart';
 
 /// Rubrique pas encore construite (Mon bazar…).
@@ -51,18 +53,7 @@ class AProposScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: vertOdv,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Icon(
-                          Icons.auto_stories,
-                          color: Colors.white,
-                        ),
-                      ),
+                      const IconeApp(taille: 48),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
