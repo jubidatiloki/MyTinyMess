@@ -4,16 +4,19 @@ import '../../models/lieu.dart';
 import '../../models/bouteille.dart';
 import '../../state/cave_controller.dart';
 import '../../state/lieux_controller.dart';
+import '../../state/types_bouteille_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
 import 'formulaire_bouteille_screen.dart';
+import 'types_bouteille_screen.dart';
 
 class ListeBouteillesScreen extends StatefulWidget {
   const ListeBouteillesScreen({
     super.key,
     required this.controller,
     required this.lieux,
+    required this.types,
     this.menu,
     this.onGererLieux,
   });
@@ -22,6 +25,9 @@ class ListeBouteillesScreen extends StatefulWidget {
 
   /// Emplacements personnalisés (communs avec la bibliothèque).
   final LieuxController lieux;
+
+  /// Types de bouteille (liste paramétrable).
+  final TypesBouteilleController types;
 
   /// Ouvre l'écran « Emplacements » (bouton de la barre de titre).
   final VoidCallback? onGererLieux;
@@ -35,7 +41,7 @@ class ListeBouteillesScreen extends StatefulWidget {
 
 class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
   String _recherche = '';
-  TypeVin? _type;
+  String? _typeId;
   bool _seulementEnStock = false;
   String? _lieu;
 
@@ -46,9 +52,20 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
         builder: (_) => FormulaireBouteilleScreen(
           controller: widget.controller,
           lieux: widget.lieux,
+          types: widget.types,
           bouteille: bouteille,
           lieuParDefaut: _lieu,
         ),
+      ),
+    );
+  }
+
+  void _gererTypes() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            TypesBouteilleScreen(types: widget.types, cave: widget.controller),
       ),
     );
   }
@@ -69,6 +86,11 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
       ),
       menu: widget.menu,
       actions: [
+        IconButton(
+          tooltip: 'Types de bouteille',
+          icon: const Icon(Icons.category_outlined),
+          onPressed: _gererTypes,
+        ),
         if (widget.onGererLieux != null)
           IconButton(
             tooltip: 'Emplacements',
@@ -76,9 +98,13 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
             onPressed: widget.onGererLieux,
           ),
       ],
-      bouton: BoutonAjout(libelle: 'Ajouter un vin', onPressed: _ouvrir),
+      bouton: BoutonAjout(libelle: 'Ajouter une bouteille', onPressed: _ouvrir),
       corps: ListenableBuilder(
-        listenable: Listenable.merge([widget.controller, widget.lieux]),
+        listenable: Listenable.merge([
+          widget.controller,
+          widget.lieux,
+          widget.types,
+        ]),
         builder: (context, _) {
           if (!widget.controller.charge) {
             return const Center(child: CircularProgressIndicator());
@@ -87,7 +113,7 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
           final lieu = widget.lieux.parId(_lieu ?? '') == null ? null : _lieu;
           final bouteilles = widget.controller.rechercher(
             texte: _recherche,
-            type: _type,
+            typeId: widget.types.parId(_typeId ?? '') == null ? null : _typeId,
             seulementEnStock: _seulementEnStock,
             lieuId: lieu,
           );
@@ -122,14 +148,14 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
                             setState(() => _seulementEnStock = v),
                       ),
                     ),
-                    for (final t in TypeVin.values)
+                    for (final t in widget.types.elements)
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
-                          label: Text(t.libelle),
-                          selected: _type == t,
+                          label: Text(t.nom),
+                          selected: _typeId == t.id,
                           onSelected: (sel) =>
-                              setState(() => _type = sel ? t : null),
+                              setState(() => _typeId = sel ? t.id : null),
                         ),
                       ),
                   ],
@@ -140,14 +166,15 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
                     ? ListeVide(
                         icone: Icons.wine_bar_outlined,
                         message: widget.controller.elements.isEmpty
-                            ? 'La cave est vide.\nTouchez + pour ajouter un vin.'
-                            : 'Aucun vin ne correspond.',
+                            ? 'La cave est vide.\nTouchez « Ajouter une bouteille ».'
+                            : 'Aucune bouteille ne correspond.',
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
                         itemCount: bouteilles.length,
                         itemBuilder: (context, i) => _LigneBouteille(
                           bouteille: bouteilles[i],
+                          couleur: widget.types.couleurDe(bouteilles[i].typeId),
                           emplacement: widget.controller.emplacementDe(
                             bouteilles[i],
                           ),
@@ -171,18 +198,10 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
   }
 }
 
-Color couleurVin(TypeVin type) => switch (type) {
-  TypeVin.rouge => const Color(0xFF7B1E3A),
-  TypeVin.blanc => const Color(0xFFE3C565),
-  TypeVin.rose => const Color(0xFFF2A0A8),
-  TypeVin.effervescent => const Color(0xFFD9CF9A),
-  TypeVin.liquoreux => const Color(0xFFC98A2B),
-  TypeVin.autre => Colors.grey,
-};
-
 class _LigneBouteille extends StatelessWidget {
   const _LigneBouteille({
     required this.bouteille,
+    required this.couleur,
     required this.emplacement,
     required this.onTap,
     required this.onAjouter,
@@ -190,6 +209,7 @@ class _LigneBouteille extends StatelessWidget {
   });
 
   final Bouteille bouteille;
+  final Color couleur;
   final String emplacement;
   final VoidCallback onTap;
   final VoidCallback onAjouter;
@@ -202,7 +222,7 @@ class _LigneBouteille extends StatelessWidget {
     return Opacity(
       opacity: b.enStock ? 1 : 0.5,
       child: CarteLigne(
-        leading: IconeCarree(Icons.wine_bar, couleur: couleurVin(b.type)),
+        leading: IconeCarree(Icons.wine_bar, couleur: couleur),
         title: Text(titre, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Row(
           children: [
@@ -221,7 +241,7 @@ class _LigneBouteille extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: 'Retirer une bouteille',
+              tooltip: 'Retirer 1 du stock',
               icon: const Icon(Icons.remove_circle_outline),
               onPressed: b.enStock ? onRetirer : null,
             ),
@@ -236,7 +256,7 @@ class _LigneBouteille extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Ajouter une bouteille',
+              tooltip: 'Ajouter 1 au stock',
               icon: const Icon(Icons.add_circle_outline),
               onPressed: onAjouter,
             ),

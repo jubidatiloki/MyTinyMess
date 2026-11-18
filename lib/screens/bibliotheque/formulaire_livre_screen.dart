@@ -128,12 +128,11 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
               icon: const Icon(Icons.delete_outline),
               onPressed: _supprimer,
             ),
-          IconButton(
-            tooltip: 'Enregistrer',
-            icon: const Icon(Icons.check),
-            onPressed: _enregistrer,
-          ),
         ],
+      ),
+      bottomNavigationBar: BarreEnregistrer(
+        libelle: 'Enregistrer le livre',
+        onPressed: _enregistrer,
       ),
       body: Form(
         key: _form,

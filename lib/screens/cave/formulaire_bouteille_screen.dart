@@ -5,25 +5,28 @@ import '../../models/lieu.dart';
 import '../../models/bouteille.dart';
 import '../../state/cave_controller.dart';
 import '../../state/lieux_controller.dart';
+import '../../state/types_bouteille_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
 
-/// Ajout (bouteille == null) ou modification d'un vin de la cave.
+/// Ajout (bouteille == null) ou modification d'une bouteille de la cave.
 class FormulaireBouteilleScreen extends StatefulWidget {
   const FormulaireBouteilleScreen({
     super.key,
     required this.controller,
     required this.lieux,
+    required this.types,
     this.bouteille,
     this.lieuParDefaut,
   });
 
   final CaveController controller;
   final LieuxController lieux;
+  final TypesBouteilleController types;
   final Bouteille? bouteille;
 
-  /// Emplacement proposé pour un nouveau vin (filtre de la liste).
+  /// Emplacement proposé pour une nouvelle bouteille (filtre de la liste).
   final String? lieuParDefaut;
 
   @override
@@ -51,7 +54,9 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
   late final _rangee = TextEditingController(text: _b?.emplacement.rangee);
   late final _colonne = TextEditingController(text: _b?.emplacement.colonne);
   late final _notes = TextEditingController(text: _b?.notes);
-  late TypeVin _type = _b?.type ?? TypeVin.rouge;
+  late String? _typeId =
+      _b?.typeId ??
+      (widget.types.elements.isEmpty ? null : widget.types.elements.first.id);
 
   bool get _modification => _b != null;
 
@@ -88,7 +93,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
     var bouteille = Bouteille(
       id: _b?.id ?? const Uuid().v4(),
       nom: _nom.text.trim(),
-      type: _type,
+      typeId: _typeId ?? 'autre',
       producteur: texteOuNull(_producteur.text),
       appellation: texteOuNull(_appellation.text),
       region: texteOuNull(_region.text),
@@ -132,7 +137,9 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
     final b = _b;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_modification ? 'Modifier le vin' : 'Nouveau vin'),
+        title: Text(
+          _modification ? 'Modifier la bouteille' : 'Nouvelle bouteille',
+        ),
         actions: [
           if (_modification)
             IconButton(
@@ -140,12 +147,11 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
               icon: const Icon(Icons.delete_outline),
               onPressed: _supprimer,
             ),
-          IconButton(
-            tooltip: 'Enregistrer',
-            icon: const Icon(Icons.check),
-            onPressed: _enregistrer,
-          ),
         ],
+      ),
+      bottomNavigationBar: BarreEnregistrer(
+        libelle: 'Enregistrer la bouteille',
+        onPressed: _enregistrer,
       ),
       body: Form(
         key: _form,
@@ -155,20 +161,37 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
             TextFormField(
               key: const Key('champ-nom'),
               controller: _nom,
-              decoration: const InputDecoration(labelText: 'Nom du vin *'),
+              decoration: const InputDecoration(labelText: 'Nom *'),
               validator: (v) => (v == null || v.trim().isEmpty)
                   ? 'Le nom est obligatoire'
                   : null,
             ),
             espace,
-            DropdownButtonFormField<TypeVin>(
-              initialValue: _type,
+            DropdownButtonFormField<String>(
+              key: const Key('champ-type'),
+              isExpanded: true,
+              // Type supprimé entre-temps : on laisse choisir.
+              initialValue: widget.types.parId(_typeId ?? '') == null
+                  ? null
+                  : _typeId,
               decoration: const InputDecoration(labelText: 'Type'),
+              hint: const Text('Choisir un type'),
               items: [
-                for (final t in TypeVin.values)
-                  DropdownMenuItem(value: t, child: Text(t.libelle)),
+                for (final t in widget.types.elements)
+                  DropdownMenuItem(
+                    value: t.id,
+                    child: Row(
+                      children: [
+                        Icon(Icons.wine_bar, size: 18, color: t.color),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(t.nom, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
-              onChanged: (t) => setState(() => _type = t!),
+              onChanged: (t) => setState(() => _typeId = t),
             ),
             espace,
             TextFormField(

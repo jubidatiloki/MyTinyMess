@@ -4,18 +4,21 @@ import '../models/lieu.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
+import '../state/frigo_controller.dart';
 import '../state/lieux_controller.dart';
 import '../theme.dart';
 import '../widgets/lieux.dart';
 import '../widgets/page.dart';
 
-/// « Vue d'ensemble » : une tuile par collection avec son compteur, puis
-/// tous les emplacements avec ce qu'ils contiennent.
+/// « Vue d'ensemble » : une tuile par collection avec son compteur, une
+/// alerte pour les aliments à consommer vite, puis tous les emplacements
+/// avec ce qu'ils contiennent.
 class TableauDeBordScreen extends StatelessWidget {
   const TableauDeBordScreen({
     super.key,
     required this.bibliotheque,
     required this.cave,
+    required this.frigo,
     required this.lieux,
     required this.onOuvrir,
     this.menu,
@@ -23,6 +26,7 @@ class TableauDeBordScreen extends StatelessWidget {
 
   final BibliothequeController bibliotheque;
   final CaveController cave;
+  final FrigoController frigo;
   final LieuxController lieux;
   final ValueChanged<Section> onOuvrir;
   final Widget? menu;
@@ -34,16 +38,34 @@ class TableauDeBordScreen extends StatelessWidget {
       sousTitre: 'Vos collections en un coup d\'œil',
       menu: menu,
       corps: ListenableBuilder(
-        listenable: Listenable.merge([bibliotheque, cave, lieux]),
+        listenable: Listenable.merge([bibliotheque, cave, frigo, lieux]),
         builder: (context, _) {
-          final livres = bibliotheque.nombreLivres;
-          final bouteilles = cave.totalBouteilles;
+          final aSurveiller = frigo.nombreASurveiller;
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _tuiles(livres, bouteilles),
+                _tuiles(),
+                if (aSurveiller > 0) ...[
+                  const SizedBox(height: 16),
+                  Card(
+                    key: const Key('alerte-frigo'),
+                    child: ListTile(
+                      leading: const IconeCarree(
+                        Icons.warning_amber_rounded,
+                        couleur: Color(0xFFE5A23A),
+                      ),
+                      title: Text(
+                        '$aSurveiller aliment${aSurveiller > 1 ? 's' : ''} '
+                        'à consommer vite',
+                      ),
+                      subtitle: const Text('Périmés ou bientôt périmés'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => onOuvrir(Section.frigo),
+                    ),
+                  ),
+                ],
                 if (lieux.elements.isEmpty) ...[
                   const TitreSection('Emplacements'),
                   _aucunEmplacement(),
@@ -66,7 +88,7 @@ class TableauDeBordScreen extends StatelessWidget {
       title: const Text('Aucun emplacement'),
       subtitle: const Text(
         'Créez vos pièces, meubles et étagères pour savoir où est rangé '
-        'chaque livre et chaque bouteille.',
+        'chaque livre, chaque bouteille et chaque aliment.',
       ),
       trailing: TextButton(
         onPressed: () => onOuvrir(Section.emplacements),
@@ -75,20 +97,33 @@ class TableauDeBordScreen extends StatelessWidget {
     ),
   );
 
+  /// Ce qu'un emplacement contient (sous-emplacements compris).
+  int _nombreDans(TypeLieu type, String lieuId) => switch (type) {
+    TypeLieu.livres => bibliotheque.nombreDans(lieuId),
+    TypeLieu.cave => cave.nombreDans(lieuId),
+    TypeLieu.frigo => frigo.nombreDans(lieuId),
+  };
+
+  bool _sansLieu(String? lieuId) => lieux.parId(lieuId ?? '') == null;
+
   /// Les emplacements d'un type avec ce qu'ils contiennent (sous-emplacements
   /// compris), puis ce qui n'est rangé nulle part.
   Widget _emplacements(TypeLieu type) {
-    final livres = type == TypeLieu.livres;
     final noeuds = lieux.arbre(type: type);
-    final sansLieu = livres
-        ? bibliotheque.elements
-              .where(
-                (l) => !l.estSouhait && lieux.parId(l.lieuId ?? '') == null,
-              )
-              .length
-        : cave.elements
-              .where((b) => lieux.parId(b.emplacement.lieuId ?? '') == null)
-              .fold(0, (s, b) => s + b.quantite);
+    final sansLieu = switch (type) {
+      TypeLieu.livres =>
+        bibliotheque.elements
+            .where((l) => !l.estSouhait && _sansLieu(l.lieuId))
+            .length,
+      TypeLieu.cave =>
+        cave.elements
+            .where((b) => _sansLieu(b.emplacement.lieuId))
+            .fold(0, (s, b) => s + b.quantite),
+      TypeLieu.frigo =>
+        frigo.elements
+            .where((a) => _sansLieu(a.lieuId))
+            .fold(0, (s, a) => s + a.quantite),
+    };
     return CarteGroupe(
       enfants: [
         if (noeuds.isEmpty)
@@ -106,9 +141,7 @@ class TableauDeBordScreen extends StatelessWidget {
             nom: n.lieu.nom,
             profondeur: n.profondeur,
             type: type,
-            nombre: livres
-                ? bibliotheque.nombreDans(n.lieu.id)
-                : cave.nombreDans(n.lieu.id),
+            nombre: _nombreDans(type, n.lieu.id),
             onTap: () => onOuvrir(Section.emplacements),
           ),
         if (sansLieu > 0)
@@ -124,30 +157,44 @@ class TableauDeBordScreen extends StatelessWidget {
     );
   }
 
-  Widget _tuiles(int livres, int bouteilles) => Wrap(
-    spacing: 16,
-    runSpacing: 16,
-    children: [
-      TuileCompteur(
-        key: const Key('tuile-livres'),
-        nombre: livres,
-        libelle: livres > 1 ? 'livres' : 'livre',
-        image: 'assets/images/bibliotheque.jpg',
-        icone: Icons.menu_book,
-        couleurs: const [Color(0xFF6B4A2B), Color(0xFF2E2016)],
-        onTap: () => onOuvrir(Section.bibliotheque),
-      ),
-      TuileCompteur(
-        key: const Key('tuile-bouteilles'),
-        nombre: bouteilles,
-        libelle: bouteilles > 1 ? 'bouteilles' : 'bouteille',
-        image: 'assets/images/cave.jpg',
-        icone: Icons.wine_bar,
-        couleurs: const [Color(0xFF7B1E3A), Color(0xFF2A1218)],
-        onTap: () => onOuvrir(Section.cave),
-      ),
-    ],
-  );
+  Widget _tuiles() {
+    final livres = bibliotheque.nombreLivres;
+    final bouteilles = cave.totalBouteilles;
+    final aliments = frigo.nombreArticles;
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      children: [
+        TuileCompteur(
+          key: const Key('tuile-livres'),
+          nombre: livres,
+          libelle: livres > 1 ? 'livres' : 'livre',
+          image: 'assets/images/bibliotheque.jpg',
+          icone: Icons.menu_book,
+          couleurs: const [Color(0xFF6B4A2B), Color(0xFF2E2016)],
+          onTap: () => onOuvrir(Section.bibliotheque),
+        ),
+        TuileCompteur(
+          key: const Key('tuile-bouteilles'),
+          nombre: bouteilles,
+          libelle: bouteilles > 1 ? 'bouteilles' : 'bouteille',
+          image: 'assets/images/cave.jpg',
+          icone: Icons.wine_bar,
+          couleurs: const [Color(0xFF7B1E3A), Color(0xFF2A1218)],
+          onTap: () => onOuvrir(Section.cave),
+        ),
+        TuileCompteur(
+          key: const Key('tuile-aliments'),
+          nombre: aliments,
+          libelle: aliments > 1 ? 'aliments' : 'aliment',
+          image: 'assets/images/frigo.jpg',
+          icone: Icons.kitchen,
+          couleurs: const [Color(0xFF2F6F7E), Color(0xFF143238)],
+          onTap: () => onOuvrir(Section.frigo),
+        ),
+      ],
+    );
+  }
 }
 
 /// Ligne « Salon ……… 📖 12 » de la vue d'ensemble.

@@ -1,16 +1,33 @@
-/// Ce qu'on range dans un emplacement : des livres OU des bouteilles,
-/// jamais les deux.
+/// Ce qu'on range dans un emplacement : des livres, des bouteilles OU des
+/// aliments, jamais un mélange.
 enum TypeLieu {
-  livres('Bibliothèque', 'livres'),
-  cave('Cave', 'bouteilles');
+  livres(
+    'Bibliothèque',
+    'livres',
+    'livre',
+    'Une pièce, une bibliothèque, une étagère…',
+  ),
+  cave('Cave', 'bouteilles', 'bouteille', 'Une cave, un casier, une armoire…'),
+  frigo(
+    'Frigo',
+    'aliments',
+    'aliment',
+    'Le frigo, le congélateur, un placard…',
+  );
 
-  const TypeLieu(this.libelle, this.contenu);
+  const TypeLieu(this.libelle, this.contenu, this.unite, this.exemples);
 
   /// « Bibliothèque » / « Cave ».
   final String libelle;
 
-  /// « livres » / « bouteilles ».
+  /// « livres » / « bouteilles » / « aliments ».
   final String contenu;
+
+  /// Au singulier : « livre », « bouteille », « aliment ».
+  final String unite;
+
+  /// Exemples d'emplacements de ce type.
+  final String exemples;
 }
 
 /// Emplacement personnalisé où l'on range des livres ou des bouteilles :

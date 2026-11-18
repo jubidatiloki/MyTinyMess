@@ -22,6 +22,11 @@ class CaveController extends CollectionController<Bouteille> {
   /// Nombre total de bouteilles dans la cave.
   int get totalBouteilles => elements.fold(0, (s, b) => s + b.quantite);
 
+  /// Nombre de bouteilles de ce type (pour l'écran des types).
+  int nombreDeType(String typeId) => elements
+      .where((b) => b.typeId == typeId)
+      .fold(0, (s, b) => s + b.quantite);
+
   /// Nombre de bouteilles dans ce lieu, y compris dans ce qu'il contient.
   int nombreDans(String lieuId) {
     final dedans = lieux?.descendantsEtSoi(lieuId) ?? {lieuId};
@@ -76,7 +81,7 @@ class CaveController extends CollectionController<Bouteille> {
   /// ce qu'il contient). Celles en stock d'abord, puis par nom.
   List<Bouteille> rechercher({
     String texte = '',
-    TypeVin? type,
+    String? typeId,
     bool seulementEnStock = false,
     String? lieuId,
   }) {
@@ -85,7 +90,7 @@ class CaveController extends CollectionController<Bouteille> {
         ? null
         : (lieux?.descendantsEtSoi(lieuId) ?? {lieuId});
     final resultat = elements.where((b) {
-      if (type != null && b.type != type) {
+      if (typeId != null && b.typeId != typeId) {
         return false;
       }
       if (seulementEnStock && !b.enStock) {

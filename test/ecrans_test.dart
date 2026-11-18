@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_tiny_mess/app.dart';
 import 'package:my_tiny_mess/data/depot.dart';
+import 'package:my_tiny_mess/models/aliment.dart';
 import 'package:my_tiny_mess/models/bouteille.dart';
 import 'package:my_tiny_mess/models/livre.dart';
 import 'package:my_tiny_mess/models/section.dart';
+import 'package:my_tiny_mess/models/type_bouteille.dart';
 import 'package:my_tiny_mess/state/bibliotheque_controller.dart';
 import 'package:my_tiny_mess/state/cave_controller.dart';
 import 'package:my_tiny_mess/state/preferences_controller.dart';
@@ -43,7 +45,8 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Vue d\'ensemble'), findsOneWidget);
     expect(find.text('livre'), findsOneWidget);
     expect(find.text('bouteille'), findsOneWidget);
-    expect(find.text('0'), findsNWidgets(2));
+    expect(find.text('aliment'), findsOneWidget);
+    expect(find.text('0'), findsNWidgets(3));
   });
 
   testWidgets('vue d\'ensemble : compteurs et accès par les tuiles', (
@@ -149,7 +152,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Étagère 1').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
     await tester.pumpAndSettle();
 
     expect(find.text('Salon › Étagère 1'), findsOneWidget);
@@ -184,7 +187,7 @@ void main() {
   ) async {
     await lancer(tester);
     await ouvrir(tester, Section.emplacements);
-    expect(find.textContaining('Aucun emplacement'), findsNWidgets(2));
+    expect(find.textContaining('Aucun emplacement'), findsNWidgets(3));
 
     await tester.tap(find.byTooltip('Ajouter un emplacement'));
     await tester.pumpAndSettle();
@@ -206,7 +209,7 @@ void main() {
     await tester.tap(find.text('Confirmer'));
     await tester.pumpAndSettle();
     expect(find.text('Cellier'), findsNothing);
-    expect(find.textContaining('Aucun emplacement'), findsNWidgets(2));
+    expect(find.textContaining('Aucun emplacement'), findsNWidgets(3));
 
     // Un emplacement pour la cave ne s'affiche que du côté cave.
     await tester.tap(find.byKey(const Key('ajouter-lieu-cave')));
@@ -230,7 +233,7 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     await ouvrir(tester, Section.cave);
-    await tester.tap(find.byTooltip('Ajouter un vin'));
+    await tester.tap(find.byTooltip('Ajouter une bouteille'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.byKey(const Key('champ-lieu')),
@@ -256,7 +259,7 @@ void main() {
     // Pas encore chez moi : ni emplacement, ni prêt.
     expect(find.byKey(const Key('champ-lieu')), findsNothing);
     expect(find.byKey(const Key('champ-possession')), findsNothing);
-    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
     await tester.pumpAndSettle();
 
     expect(find.text('Hypérion'), findsNothing); // filtre « Tous »
@@ -283,6 +286,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(modeActuel(), ThemeMode.light);
 
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('pref-demarrage')),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.ensureVisible(find.byKey(const Key('pref-demarrage')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('pref-demarrage')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ma cave').last);
@@ -303,7 +313,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Le titre est obligatoire.
-    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
     await tester.pumpAndSettle();
     expect(find.text('Le titre est obligatoire'), findsOneWidget);
 
@@ -329,7 +339,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.enterText(find.byKey(const Key('champ-notes')), 'Génial');
-    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
     await tester.pumpAndSettle();
 
     expect(find.text('Dune'), findsOneWidget);
@@ -341,12 +351,12 @@ void main() {
     expect(enregistre.datePret, isNotNull);
   });
 
-  testWidgets('cave : ajouter un vin, puis + et -', (tester) async {
+  testWidgets('cave : ajouter une bouteille, puis + et -', (tester) async {
     await lancer(tester);
     await ouvrir(tester, Section.cave);
     expect(find.text('0 bouteille'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Ajouter un vin'));
+    await tester.tap(find.byTooltip('Ajouter une bouteille'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('champ-nom')), 'Chinon');
     await tester.enterText(find.byKey(const Key('champ-millesime')), '2020');
@@ -363,18 +373,18 @@ void main() {
     await tester.tap(find.byKey(const Key('valider-lieu')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('champ-rangee')), '2');
-    await tester.tap(find.byTooltip('Enregistrer'));
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
     await tester.pumpAndSettle();
 
     expect(find.text('Chinon 2020'), findsOneWidget);
     expect(find.text('Cellier · rangée 2'), findsOneWidget);
     expect(find.text('3 bouteilles'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Retirer une bouteille'));
+    await tester.tap(find.byTooltip('Retirer 1 du stock'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Retirer une bouteille'));
+    await tester.tap(find.byTooltip('Retirer 1 du stock'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Ajouter une bouteille'));
+    await tester.tap(find.byTooltip('Ajouter 1 au stock'));
     await tester.pumpAndSettle();
     expect(find.text('2 bouteilles'), findsOneWidget);
 
@@ -387,5 +397,170 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Historique (2 en stock)'), findsOneWidget);
+  });
+
+  testWidgets('précédent : retour à la vue d\'ensemble', (tester) async {
+    await lancer(tester);
+    for (final s in [
+      Section.cave,
+      Section.emplacements,
+      Section.bibliotheque,
+      Section.frigo,
+    ]) {
+      await ouvrir(tester, s);
+      expect(find.widgetWithText(AppBar, 'Vue d\'ensemble'), findsNothing);
+      // Bouton « précédent » du téléphone ou du navigateur.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppBar, 'Vue d\'ensemble'), findsOneWidget);
+    }
+  });
+
+  testWidgets('types de bouteille : ajouter, utiliser, supprimer', (
+    tester,
+  ) async {
+    await lancer(tester);
+    await ouvrir(tester, Section.cave);
+    await tester.tap(find.byTooltip('Types de bouteille'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rouge'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Ajouter un type'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-nom-type')), 'Bière');
+    await tester.tap(find.byKey(Key('couleur-${TypeBouteille.palette[4]}')));
+    await tester.tap(find.byKey(const Key('valider-type')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Bière'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Bière'), findsOneWidget);
+
+    // Type inutilisé : supprimable.
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('type-liquoreux')),
+        matching: find.byTooltip('Supprimer'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirmer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Liquoreux'), findsNothing);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // Une bouteille de bière.
+    await tester.tap(find.byTooltip('Ajouter une bouteille'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('champ-nom')), 'Blonde');
+    await tester.tap(find.byKey(const Key('champ-type')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bière').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
+    await tester.pumpAndSettle();
+    expect(find.text('Blonde'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.widgetWithText(ChoiceChip, 'Bière'),
+      200,
+      scrollable: find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+      ).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Bière'));
+    await tester.pumpAndSettle();
+    expect(find.text('Blonde'), findsOneWidget);
+
+    // Type utilisé : suppression refusée.
+    await tester.tap(find.byTooltip('Types de bouteille'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Bière'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    final biere = find.ancestor(
+      of: find.text('Bière'),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith('type-'),
+      ),
+    );
+    final supprimerBiere = find.descendant(
+      of: biere,
+      matching: find.byTooltip('Supprimer'),
+    );
+    // Remonte la ligne en haut : le bouton d'ajout ne la cache plus.
+    await tester.ensureVisible(supprimerBiere);
+    await tester.pumpAndSettle();
+    await tester.tap(supprimerBiere);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('utilisent encore'), findsOneWidget);
+    await tester.tap(find.text('Compris'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bière'), findsOneWidget);
+  });
+
+  testWidgets('frigo : ajouter un aliment, + et -, vue d\'ensemble', (
+    tester,
+  ) async {
+    final depot = await lancer(tester);
+    await ouvrir(tester, Section.frigo);
+    expect(find.textContaining('Le frigo est vide'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Ajouter un aliment'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('champ-nom-aliment')),
+      'Yaourts',
+    );
+    await tester.enterText(
+      find.byKey(const Key('champ-quantite-aliment')),
+      '4',
+    );
+    await tester.enterText(find.byKey(const Key('champ-contenance')), '125 g');
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Yaourts (125 g)'), findsOneWidget);
+    expect(find.text('Pas de date'), findsOneWidget);
+    expect(find.text('4 articles'), findsOneWidget);
+    await tester.tap(find.byTooltip('Retirer 1 du stock'));
+    await tester.pumpAndSettle();
+    expect(find.text('3 articles'), findsOneWidget);
+    expect(Aliment.fromJson((await depot.lire('aliments')).single).quantite, 3);
+
+    await ouvrir(tester, Section.accueil);
+    expect(find.text('aliments'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('tuile-aliments')),
+        matching: find.text('3'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('vue d\'ensemble : alerte des aliments à consommer vite', (
+    tester,
+  ) async {
+    final depot = DepotMemoire();
+    await depot.ecrire('aliments', [
+      Aliment(
+        id: 'a',
+        nom: 'Jambon',
+        datePeremption: DateTime.now().subtract(const Duration(days: 1)),
+      ).toJson(),
+    ]);
+    await lancer(tester, depot);
+    expect(find.text('1 aliment à consommer vite'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('alerte-frigo')));
+    await tester.pumpAndSettle();
+    expect(find.text('Périmé depuis 1 jour'), findsOneWidget);
   });
 }

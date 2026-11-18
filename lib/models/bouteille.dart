@@ -1,15 +1,3 @@
-enum TypeVin {
-  rouge('Rouge'),
-  blanc('Blanc'),
-  rose('Rosé'),
-  effervescent('Effervescent'),
-  liquoreux('Liquoreux'),
-  autre('Autre');
-
-  const TypeVin(this.libelle);
-  final String libelle;
-}
-
 /// Endroit exact où sont rangées les bouteilles : un lieu personnalisé
 /// (cave, casier, armoire… voir `Lieu`) et une position dans ce lieu.
 class Emplacement {
@@ -94,7 +82,7 @@ class Bouteille {
     required this.id,
     required this.nom,
     this.emplacement = const Emplacement(),
-    this.type = TypeVin.rouge,
+    this.typeId = 'rouge',
     this.producteur,
     this.appellation,
     this.region,
@@ -110,7 +98,9 @@ class Bouteille {
   /// Nom de la cuvée ou du vin.
   final String nom;
   final Emplacement emplacement;
-  final TypeVin type;
+
+  /// Type de bouteille (voir `TypeBouteille`, liste paramétrable).
+  final String typeId;
   final String? producteur;
   final String? appellation;
   final String? region;
@@ -168,7 +158,7 @@ class Bouteille {
     id: id,
     nom: nom,
     emplacement: emplacement ?? this.emplacement,
-    type: type,
+    typeId: typeId,
     producteur: producteur,
     appellation: appellation,
     region: region,
@@ -183,7 +173,7 @@ class Bouteille {
     'id': id,
     'nom': nom,
     'emplacement': emplacement.toJson(),
-    'type': type.name,
+    'type': typeId,
     if (producteur != null) 'producteur': producteur,
     if (appellation != null) 'appellation': appellation,
     if (region != null) 'region': region,
@@ -200,10 +190,7 @@ class Bouteille {
     emplacement: Emplacement.fromJson(
       (json['emplacement'] as Map?)?.cast<String, dynamic>() ?? const {},
     ),
-    type: TypeVin.values.firstWhere(
-      (t) => t.name == json['type'],
-      orElse: () => TypeVin.autre,
-    ),
+    typeId: json['type'] as String? ?? 'autre',
     producteur: json['producteur'] as String?,
     appellation: json['appellation'] as String?,
     region: json['region'] as String?,

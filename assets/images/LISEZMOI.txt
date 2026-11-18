@@ -1,4 +1,5 @@
-Déposez ici deux photos pour les tuiles de la Vue d'ensemble :
+Déposez ici trois photos pour les tuiles de la Vue d'ensemble :
 - bibliotheque.jpg (étagères de livres)
 - cave.jpg (cave à vin)
+- frigo.jpg (frigo, garde-manger)
 Format carré conseillé (environ 400 x 400 px). Sans photo, un dégradé s'affiche.

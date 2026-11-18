@@ -8,13 +8,17 @@ import 'data/depot_base.dart';
 import 'data/fusion_lieux.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
+import 'state/frigo_controller.dart';
 import 'state/lieux_controller.dart';
 import 'state/preferences_controller.dart';
+import 'state/types_bouteille_controller.dart';
 
 /// Tout ce qui est enregistré par l'application.
 const clesDonnees = [
   BibliothequeController.cle,
   CaveController.cle,
+  TypesBouteilleController.cle,
+  FrigoController.cle,
   LieuxController.cle,
   // Anciennes clés (versions 0.3 à 0.5), fusionnées ensuite dans « lieux ».
   LieuxController.ancienneCleLivres,

@@ -87,8 +87,9 @@ class AProposScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'Pour gérer sa bibliothèque (livres, notes, prêts et '
-                    'emprunts) et sa cave à vin (bouteilles, emplacements, '
-                    'entrées et sorties).\n\n'
+                    'emprunts), sa cave (bouteilles, emplacements, '
+                    'entrées et sorties) et son frigo (aliments, dates de '
+                    'péremption).\n\n'
                     'Les données restent sur l\'appareil.',
                     style: TextStyle(height: 1.5),
                   ),

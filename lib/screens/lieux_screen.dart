@@ -4,6 +4,7 @@ import '../models/lieu.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
+import '../state/frigo_controller.dart';
 import '../state/lieux_controller.dart';
 import '../theme.dart';
 import '../widgets/communs.dart';
@@ -15,7 +16,7 @@ String? resumeContenu(int nombre, TypeLieu type) {
   if (nombre == 0) {
     return null;
   }
-  final mot = type == TypeLieu.livres ? 'livre' : 'bouteille';
+  final mot = type.unite;
   return '$nombre $mot${nombre > 1 ? 's' : ''}';
 }
 
@@ -28,17 +29,21 @@ class LieuxScreen extends StatelessWidget {
     required this.lieux,
     required this.bibliotheque,
     required this.cave,
+    required this.frigo,
     this.menu,
   });
 
   final LieuxController lieux;
   final BibliothequeController bibliotheque;
   final CaveController cave;
+  final FrigoController frigo;
   final Widget? menu;
 
-  int _nombreDans(Lieu l, TypeLieu type) => type == TypeLieu.livres
-      ? bibliotheque.nombreDans(l.id)
-      : cave.nombreDans(l.id);
+  int _nombreDans(Lieu l, TypeLieu type) => switch (type) {
+    TypeLieu.livres => bibliotheque.nombreDans(l.id),
+    TypeLieu.cave => cave.nombreDans(l.id),
+    TypeLieu.frigo => frigo.nombreDans(l.id),
+  };
 
   Future<void> _supprimer(BuildContext context, Lieu lieu) async {
     final contenu = lieux.typeDe(lieu).contenu;
@@ -56,14 +61,15 @@ class LieuxScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return PageOdv(
       titre: Section.emplacements.libelle,
-      sousTitre: 'Pièces, meubles, étagères… pour les livres ou pour la cave',
+      sousTitre:
+          'Pièces, meubles, étagères… pour les livres, la cave ou le frigo',
       menu: menu,
       bouton: BoutonAjout(
         libelle: 'Ajouter un emplacement',
         onPressed: () => editerLieu(context, lieux),
       ),
       corps: ListenableBuilder(
-        listenable: Listenable.merge([lieux, bibliotheque, cave]),
+        listenable: Listenable.merge([lieux, bibliotheque, cave, frigo]),
         builder: (context, _) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
           children: [
@@ -97,11 +103,7 @@ class LieuxScreen extends StatelessWidget {
           child: ListTile(
             leading: IconeCarree(iconeTypeLieu(type)),
             title: Text('Aucun emplacement pour les ${type.contenu}'),
-            subtitle: Text(
-              type == TypeLieu.livres
-                  ? 'Une pièce, une bibliothèque, une étagère…'
-                  : 'Une cave, un casier, une armoire…',
-            ),
+            subtitle: Text(type.exemples),
           ),
         ),
       for (final n in noeuds)

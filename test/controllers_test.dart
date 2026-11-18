@@ -192,7 +192,7 @@ void main() {
         Bouteille(
           id: 'a',
           nom: 'Sancerre',
-          type: TypeVin.blanc,
+          typeId: 'blanc',
           emplacement: Emplacement(lieuId: casier, rangee: '1'),
         ).ajouter(3),
       );
@@ -254,7 +254,7 @@ void main() {
 
     test('recherche par emplacement et filtres', () {
       expect(ctrl.rechercher(texte: 'fond').single.id, 'b');
-      expect(ctrl.rechercher(type: TypeVin.blanc).single.id, 'a');
+      expect(ctrl.rechercher(typeId: 'blanc').single.id, 'a');
       expect(ctrl.rechercher(seulementEnStock: true).single.id, 'a');
       // En stock d'abord.
       expect(ctrl.rechercher().map((b) => b.id), ['a', 'b']);

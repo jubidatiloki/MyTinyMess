@@ -5,8 +5,10 @@ import 'data/depot.dart';
 import 'screens/racine_screen.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
+import 'state/frigo_controller.dart';
 import 'state/lieux_controller.dart';
 import 'state/preferences_controller.dart';
+import 'state/types_bouteille_controller.dart';
 import 'theme.dart';
 
 class MyTinyMessApp extends StatefulWidget {
@@ -26,16 +28,20 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final LieuxController _lieux;
   late final BibliothequeController _bibliotheque;
   late final CaveController _cave;
+  late final TypesBouteilleController _types;
+  late final FrigoController _frigo;
   late final PreferencesController _preferences;
 
   @override
   void initState() {
     super.initState();
     final depot = widget.depot;
-    // Emplacements communs aux livres et à la cave.
+    // Emplacements (livres, cave, frigo).
     _lieux = LieuxController(depot);
     _bibliotheque = BibliothequeController(depot, lieux: _lieux)..charger();
     _cave = CaveController(depot, lieux: _lieux);
+    _types = TypesBouteilleController(depot)..charger();
+    _frigo = FrigoController(depot, lieux: _lieux)..charger();
     // Les anciennes zones de la cave deviennent des lieux une fois tout lu.
     Future.wait([
       _lieux.charger(),
@@ -47,7 +53,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
 
   @override
   void dispose() {
-    for (final c in [_lieux, _bibliotheque, _cave]) {
+    for (final c in [_lieux, _bibliotheque, _cave, _types, _frigo]) {
       c.dispose();
     }
     if (widget.preferences == null) {
@@ -73,6 +79,8 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
           bibliotheque: _bibliotheque,
           lieux: _lieux,
           cave: _cave,
+          types: _types,
+          frigo: _frigo,
           preferences: _preferences,
         ),
       ),

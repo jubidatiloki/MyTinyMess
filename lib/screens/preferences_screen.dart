@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../models/section.dart';
+import '../state/cave_controller.dart';
 import '../state/preferences_controller.dart';
+import '../state/types_bouteille_controller.dart';
 import '../theme.dart';
 import '../widgets/page.dart';
+import 'cave/types_bouteille_screen.dart';
 
 class PreferencesScreen extends StatelessWidget {
-  const PreferencesScreen({super.key, required this.controller, this.menu});
+  const PreferencesScreen({
+    super.key,
+    required this.controller,
+    required this.types,
+    required this.cave,
+    this.menu,
+  });
 
   final PreferencesController controller;
+  final TypesBouteilleController types;
+  final CaveController cave;
   final Widget? menu;
 
   @override
@@ -18,7 +29,7 @@ class PreferencesScreen extends StatelessWidget {
       sousTitre: 'Apparence et navigation',
       menu: menu,
       corps: ListenableBuilder(
-        listenable: controller,
+        listenable: Listenable.merge([controller, types]),
         builder: (context, _) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
           children: [
@@ -42,6 +53,29 @@ class PreferencesScreen extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+            const TitreSection('Cave'),
+            CarteGroupe(
+              enfants: [
+                ListTile(
+                  key: const Key('pref-types-bouteille'),
+                  leading: const IconeCarree(Icons.category_outlined),
+                  title: const Text('Types de bouteille'),
+                  subtitle: Text(
+                    types.elements.map((t) => t.nom).join(', '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          TypesBouteilleScreen(types: types, cave: cave),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const TitreSection('Navigation'),
             CarteGroupe(

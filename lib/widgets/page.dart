@@ -211,6 +211,50 @@ class CarteLigne extends StatelessWidget {
   );
 }
 
+/// Gros bouton « Enregistrer » collé en bas des formulaires (bien visible,
+/// à placer dans `Scaffold.bottomNavigationBar`).
+class BarreEnregistrer extends StatelessWidget {
+  const BarreEnregistrer({
+    super.key,
+    required this.onPressed,
+    this.libelle = 'Enregistrer',
+  });
+
+  final VoidCallback onPressed;
+  final String libelle;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).scaffoldBackgroundColor,
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        // heightFactor 1 : la barre garde la hauteur du bouton (sinon elle
+        // occuperait tout l'écran et cacherait le formulaire).
+        child: Center(
+          heightFactor: 1,
+          child: SizedBox(
+            width: largeurContenu,
+            height: 52,
+            child: FilledButton.icon(
+              key: const Key('bouton-enregistrer'),
+              onPressed: onPressed,
+              icon: const Icon(Icons.check),
+              label: Text(libelle, style: const TextStyle(fontSize: 16)),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Bouton flottant large avec libellé (« + Ajouter un livre »).
 class BoutonAjout extends StatelessWidget {
   const BoutonAjout({

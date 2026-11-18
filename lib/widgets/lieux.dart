@@ -127,7 +127,7 @@ class _DialogueLieuState extends State<_DialogueLieu> {
                   for (final t in TypeLieu.values)
                     ButtonSegment(
                       value: t,
-                      label: Text('Pour les ${t.contenu}'),
+                      label: Text(t.libelle),
                       icon: Icon(iconeTypeLieu(t)),
                     ),
                 ],
@@ -358,5 +358,6 @@ class FiltreLieu extends StatelessWidget {
 
 IconData iconeTypeLieu(TypeLieu t) => switch (t) {
   TypeLieu.livres => Icons.menu_book_outlined,
+  TypeLieu.frigo => Icons.kitchen_outlined,
   TypeLieu.cave => Icons.wine_bar_outlined,
 };
