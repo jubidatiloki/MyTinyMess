@@ -1,7 +1,7 @@
 name: my_tiny_mess
 description: "Gérer sa bibliothèque et sa cave à vin."
 publish_to: 'none'
-version: 0.9.0
+version: 0.10.0
 
 environment:
   sdk: ^3.10.4
@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  http: ^1.6.0
+  mobile_scanner: ^7.5.0
   path: ^1.9.1
   path_provider: ^2.1.6
   sembast: ^3.8.6

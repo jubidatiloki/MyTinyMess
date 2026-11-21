@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_tiny_mess/app.dart';
 import 'package:my_tiny_mess/data/depot.dart';
+import 'package:my_tiny_mess/data/recherche_isbn.dart';
 import 'package:my_tiny_mess/models/aliment.dart';
 import 'package:my_tiny_mess/models/bouteille.dart';
 import 'package:my_tiny_mess/models/livre.dart';
@@ -12,10 +13,32 @@ import 'package:my_tiny_mess/state/cave_controller.dart';
 import 'package:my_tiny_mess/state/preferences_controller.dart';
 import 'package:my_tiny_mess/widgets/icone_app.dart';
 
+/// Recherche par ISBN simulée (pas d'Internet dans les tests).
+class _RechercheFausse implements RechercheIsbn {
+  @override
+  Future<InfosLivre?> chercher(String isbn) async => isbn == _isbnConnu
+      ? const InfosLivre(
+          isbn: _isbnConnu,
+          titre: 'Le Petit Prince',
+          auteur: 'Antoine de Saint-Exupéry',
+          annee: 1943,
+        )
+      : null;
+}
+
+const _isbnConnu = '9780306406157';
+
 void main() {
   Future<DepotMemoire> lancer(WidgetTester tester, [DepotMemoire? d]) async {
     final depot = d ?? DepotMemoire();
-    await tester.pumpWidget(MyTinyMessApp(depot: depot));
+    await tester.pumpWidget(
+      MyTinyMessApp(
+        depot: depot,
+        rechercheIsbn: _RechercheFausse(),
+        // « Appareil photo » simulé : lit toujours le même code-barres.
+        scannerIsbn: (_) async => _isbnConnu,
+      ),
+    );
     await tester.pumpAndSettle();
     return depot;
   }
@@ -469,9 +492,11 @@ void main() {
     await tester.scrollUntilVisible(
       find.widgetWithText(ChoiceChip, 'Bière'),
       200,
-      scrollable: find.byWidgetPredicate(
-        (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
-      ).last,
+      scrollable: find
+          .byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+          )
+          .last,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'Bière'));
@@ -565,5 +590,71 @@ void main() {
     await tester.tap(find.byKey(const Key('alerte-frigo')));
     await tester.pumpAndSettle();
     expect(find.text('Périmé depuis 1 jour'), findsOneWidget);
+  });
+
+  testWidgets('scanner un livre : formulaire pré-rempli, puis doublon', (
+    tester,
+  ) async {
+    final depot = await lancer(tester);
+    await ouvrir(tester, Section.bibliotheque);
+
+    await tester.tap(find.byTooltip('Scanner un livre'));
+    await tester.pumpAndSettle();
+    // Titre, auteur et année retrouvés à partir de l'ISBN scanné.
+    expect(find.text('Trouvé : « Le Petit Prince »'), findsOneWidget);
+    expect(find.text('Antoine de Saint-Exupéry'), findsOneWidget);
+    expect(find.text('1943'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
+    await tester.pumpAndSettle();
+    expect(find.text('Le Petit Prince'), findsOneWidget);
+    expect(
+      Livre.fromJson((await depot.lire('livres')).single).isbn,
+      _isbnConnu,
+    );
+
+    // Le même livre scanné une seconde fois : on prévient.
+    await tester.tap(find.byTooltip('Scanner un livre'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Déjà dans votre bibliothèque : « Le Petit Prince »'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ISBN saisi à la main : recherche, introuvable, invalide', (
+    tester,
+  ) async {
+    await lancer(tester);
+    await ouvrir(tester, Section.bibliotheque);
+    await tester.tap(find.byTooltip('Ajouter un livre'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('champ-isbn')), '123');
+    await tester.tap(find.byTooltip('Rechercher le livre'));
+    await tester.pumpAndSettle();
+    expect(find.text('ISBN invalide : vérifiez les chiffres.'), findsOneWidget);
+
+    // ISBN valide mais inconnu du service.
+    await tester.enterText(
+      find.byKey(const Key('champ-isbn')),
+      '0-306-40615-2',
+    );
+    await tester.tap(find.byTooltip('Rechercher le livre'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Livre introuvable en ligne : complétez à la main.'),
+      findsOneWidget,
+    );
+
+    // Le titre déjà tapé n'est pas écrasé par la recherche.
+    await tester.enterText(find.byKey(const Key('champ-titre')), 'Mon titre');
+    await tester.enterText(
+      find.byKey(const Key('champ-isbn')),
+      '978-0-306-40615-7',
+    );
+    await tester.tap(find.byTooltip('Rechercher le livre'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mon titre'), findsOneWidget);
+    expect(find.text('Antoine de Saint-Exupéry'), findsOneWidget);
   });
 }

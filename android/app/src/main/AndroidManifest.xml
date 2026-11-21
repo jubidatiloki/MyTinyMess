@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Recherche des livres par ISBN (Google Books, Open Library). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Scan du code-barres ISBN. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="My Tiny Mess"
         android:name="${applicationName}"

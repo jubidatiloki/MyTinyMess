@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../data/recherche_isbn.dart';
+import '../../models/isbn.dart';
 import '../../models/lieu.dart';
 import '../../models/livre.dart';
 import '../../state/bibliotheque_controller.dart';
@@ -8,6 +10,7 @@ import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
+import 'scanner_isbn_screen.dart';
 
 /// Ajout (livre == null) ou modification d'un livre.
 class FormulaireLivreScreen extends StatefulWidget {
@@ -17,6 +20,9 @@ class FormulaireLivreScreen extends StatefulWidget {
     required this.lieux,
     this.livre,
     this.lieuParDefaut,
+    this.recherche,
+    this.scanner,
+    this.isbnInitial,
   });
 
   final BibliothequeController controller;
@@ -25,6 +31,15 @@ class FormulaireLivreScreen extends StatefulWidget {
 
   /// Emplacement proposé pour un nouveau livre (filtre de la liste).
   final String? lieuParDefaut;
+
+  /// Retrouve titre, auteur… à partir de l'ISBN (null = pas de recherche).
+  final RechercheIsbn? recherche;
+
+  /// Scanner de code-barres (null = pas d'appareil photo, ex. Windows).
+  final ScannerIsbn? scanner;
+
+  /// ISBN déjà scanné : le formulaire s'ouvre et lance la recherche.
+  final String? isbnInitial;
 
   @override
   State<FormulaireLivreScreen> createState() => _FormulaireLivreScreenState();
@@ -37,7 +52,14 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
   late final _annee = TextEditingController(
     text: widget.livre?.annee?.toString(),
   );
-  late final _isbn = TextEditingController(text: widget.livre?.isbn);
+  late final _isbn = TextEditingController(
+    text: widget.livre?.isbn ?? widget.isbnInitial,
+  );
+
+  /// Résultat de la dernière recherche par ISBN (affiché sous le champ).
+  String? _messageIsbn;
+  bool _messageIsbnAlerte = false;
+  bool _rechercheEnCours = false;
   late final _genre = TextEditingController(text: widget.livre?.genre);
   late final _personne = TextEditingController(text: widget.livre?.personne);
   late final _notes = TextEditingController(text: widget.livre?.notes);
@@ -51,6 +73,103 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
   bool get _modification => widget.livre != null;
 
   bool get _souhait => _statut == StatutLecture.souhait;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isbnInitial != null) {
+      // Livre scanné : on cherche ses infos dès l'ouverture.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _rechercher());
+    }
+  }
+
+  void _message(String texte, {bool alerte = false}) => setState(() {
+    _messageIsbn = texte;
+    _messageIsbnAlerte = alerte;
+  });
+
+  /// Même ISBN déjà dans la bibliothèque (autre livre que celui-ci) ?
+  Livre? _doublon(String isbn) {
+    for (final l in widget.controller.elements) {
+      final autre = normaliserIsbn(l.isbn ?? '');
+      if (l.id != widget.livre?.id &&
+          autre != null &&
+          versIsbn13(autre) == versIsbn13(isbn)) {
+        return l;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _scanner() async {
+    final lu = await widget.scanner!(context);
+    if (lu == null || !mounted) {
+      return;
+    }
+    _isbn.text = lu;
+    await _rechercher();
+  }
+
+  /// Cherche le livre en ligne et remplit les champs encore vides.
+  Future<void> _rechercher() async {
+    final isbn = normaliserIsbn(_isbn.text);
+    if (isbn == null) {
+      _message('ISBN invalide : vérifiez les chiffres.', alerte: true);
+      return;
+    }
+    _isbn.text = isbn;
+    final doublon = _doublon(isbn);
+    final recherche = widget.recherche;
+    if (recherche == null) {
+      if (doublon != null) {
+        _message(
+          'Déjà dans votre bibliothèque : « ${doublon.titre} »',
+          alerte: true,
+        );
+      }
+      return;
+    }
+    setState(() => _rechercheEnCours = true);
+    try {
+      final infos = await recherche.chercher(isbn);
+      if (!mounted) {
+        return;
+      }
+      if (infos == null) {
+        _message('Livre introuvable en ligne : complétez à la main.');
+      } else {
+        void remplir(TextEditingController c, String? valeur) {
+          if (c.text.trim().isEmpty && valeur != null && valeur.isNotEmpty) {
+            c.text = valeur;
+          }
+        }
+
+        remplir(_titre, infos.titre);
+        remplir(_auteur, infos.auteur);
+        remplir(_annee, infos.annee?.toString());
+        remplir(_genre, infos.genre);
+        _message('Trouvé : « ${infos.titre} »');
+      }
+      if (doublon != null) {
+        _message(
+          'Déjà dans votre bibliothèque : « ${doublon.titre} »',
+          alerte: true,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        _message(
+          'Recherche impossible (pas de connexion ?). '
+          'Complétez à la main.',
+          alerte: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _rechercheEnCours = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -139,6 +258,51 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
         child: ListView(
           padding: margesCentrees(context),
           children: [
+            // ISBN en premier : scanné ou saisi, il remplit le reste.
+            TextFormField(
+              key: const Key('champ-isbn'),
+              controller: _isbn,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.search,
+              onFieldSubmitted: (_) => _rechercher(),
+              decoration: InputDecoration(
+                labelText: 'ISBN',
+                hintText: '978…',
+                prefixIcon: const Icon(Icons.qr_code_2),
+                helperText: _messageIsbn,
+                helperMaxLines: 2,
+                helperStyle: _messageIsbnAlerte
+                    ? const TextStyle(color: Color(0xFFE5A23A))
+                    : null,
+                suffixIcon: _rechercheEnCours
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.scanner != null)
+                            IconButton(
+                              tooltip: 'Scanner le code-barres',
+                              icon: const Icon(Icons.qr_code_scanner),
+                              onPressed: _scanner,
+                            ),
+                          if (widget.recherche != null)
+                            IconButton(
+                              tooltip: 'Rechercher le livre',
+                              icon: const Icon(Icons.search),
+                              onPressed: _rechercher,
+                            ),
+                        ],
+                      ),
+              ),
+            ),
+            espace,
             TextFormField(
               key: const Key('champ-titre'),
               controller: _titre,
@@ -177,11 +341,6 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
                   ),
                 ),
               ],
-            ),
-            espace,
-            TextFormField(
-              controller: _isbn,
-              decoration: const InputDecoration(labelText: 'ISBN'),
             ),
             espace,
             DropdownButtonFormField<StatutLecture>(

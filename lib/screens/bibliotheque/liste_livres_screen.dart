@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/recherche_isbn.dart';
 import '../../models/lieu.dart';
 import '../../models/livre.dart';
 import '../../state/bibliotheque_controller.dart';
@@ -8,6 +9,7 @@ import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
 import 'formulaire_livre_screen.dart';
+import 'scanner_isbn_screen.dart';
 
 class ListeLivresScreen extends StatefulWidget {
   const ListeLivresScreen({
@@ -16,6 +18,8 @@ class ListeLivresScreen extends StatefulWidget {
     required this.lieux,
     this.menu,
     this.onGererLieux,
+    this.recherche,
+    this.scanner,
   });
 
   final BibliothequeController controller;
@@ -25,6 +29,12 @@ class ListeLivresScreen extends StatefulWidget {
 
   /// Ouvre l'écran « Emplacements » (bouton de la barre de titre).
   final VoidCallback? onGererLieux;
+
+  /// Recherche des infos d'un livre par ISBN.
+  final RechercheIsbn? recherche;
+
+  /// Scanner de code-barres (null = indisponible, ex. Windows).
+  final ScannerIsbn? scanner;
 
   /// Menu latéral (tiroir) affiché par le bouton ☰.
   final Widget? menu;
@@ -38,7 +48,7 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
   FiltreLivres _filtre = FiltreLivres.tous;
   String? _lieu;
 
-  Future<void> _ouvrir([Livre? livre]) async {
+  Future<void> _ouvrir([Livre? livre, String? isbn]) async {
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -47,9 +57,20 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
           lieux: widget.lieux,
           livre: livre,
           lieuParDefaut: _lieu,
+          recherche: widget.recherche,
+          scanner: widget.scanner,
+          isbnInitial: isbn,
         ),
       ),
     );
+  }
+
+  /// Scanne un code-barres puis ouvre le formulaire pré-rempli.
+  Future<void> _scanner() async {
+    final isbn = await widget.scanner!(context);
+    if (isbn != null && mounted) {
+      await _ouvrir(null, isbn);
+    }
   }
 
   @override
@@ -72,6 +93,12 @@ class _ListeLivresScreenState extends State<ListeLivresScreen> {
       ),
       menu: widget.menu,
       actions: [
+        if (widget.scanner != null)
+          IconButton(
+            tooltip: 'Scanner un livre',
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: _scanner,
+          ),
         if (widget.onGererLieux != null)
           IconButton(
             tooltip: 'Emplacements',

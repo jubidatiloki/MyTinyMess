@@ -2,7 +2,7 @@
 
 Gérer sa **bibliothèque**, sa **cave** et son **frigo**.
 
-- **Bibliothèque** : titre, auteur, année, genre, ISBN, état de lecture (à lire / en cours / lu / liste de souhaits), note sur 5, notes libres, et où est le livre (chez moi, prêté à…, emprunté à…, avec la date).
+- **Bibliothèque** : ajout par **scan du code-barres ISBN** (téléphone, navigateur) ou saisie de l'ISBN, avec titre, auteur et année retrouvés en ligne ; titre, auteur, année, genre, ISBN, état de lecture (à lire / en cours / lu / liste de souhaits), note sur 5, notes libres, et où est le livre (chez moi, prêté à…, emprunté à…, avec la date).
 - **Cave** : nom, type (liste paramétrable : rouge, blanc, bière…), producteur, appellation, région, millésime, « à boire avant », nombre de bouteilles avec boutons + / −, historique des entrées et sorties, et **emplacement exact** (lieu, rangée, colonne).
 - **Frigo** : aliments avec quantité, contenance, date de péremption (en orange quand il faut les consommer dans les 3 jours, en rouge une fois périmés) et emplacement (frigo, congélateur, placard…).
 - **Emplacements personnalisés**, chacun pour les livres, la cave ou le frigo : pièces, meubles, étagères, casiers… rangés les uns dans les autres (« Salon › Grande bibliothèque › Étagère 3 »), gérés dans leur propre écran, avec filtre par emplacement. La vue d'ensemble montre chaque emplacement avec son nombre de livres, de bouteilles ou d'aliments, et signale les aliments à consommer vite.

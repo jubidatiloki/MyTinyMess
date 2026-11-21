@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/recherche_isbn.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
@@ -9,6 +10,7 @@ import '../state/preferences_controller.dart';
 import '../state/types_bouteille_controller.dart';
 import '../widgets/menu_lateral.dart';
 import 'bibliotheque/liste_livres_screen.dart';
+import 'bibliotheque/scanner_isbn_screen.dart';
 import 'cave/liste_bouteilles_screen.dart';
 import 'frigo/liste_aliments_screen.dart';
 import 'lieux_screen.dart';
@@ -26,6 +28,8 @@ class RacineScreen extends StatefulWidget {
     required this.frigo,
     required this.lieux,
     required this.preferences,
+    this.rechercheIsbn,
+    this.scannerIsbn,
   });
 
   /// Largeur d'écran à partir de laquelle le menu peut rester ouvert.
@@ -39,6 +43,10 @@ class RacineScreen extends StatefulWidget {
   /// Emplacements (livres, cave et frigo).
   final LieuxController lieux;
   final PreferencesController preferences;
+
+  /// Recherche des livres par ISBN et scanner de code-barres.
+  final RechercheIsbn? rechercheIsbn;
+  final ScannerIsbn? scannerIsbn;
 
   @override
   State<RacineScreen> createState() => _RacineScreenState();
@@ -65,6 +73,8 @@ class _RacineScreenState extends State<RacineScreen> {
       lieux: widget.lieux,
       menu: menu,
       onGererLieux: _gererLieux,
+      recherche: widget.rechercheIsbn,
+      scanner: widget.scannerIsbn,
     ),
     Section.cave => ListeBouteillesScreen(
       controller: widget.cave,

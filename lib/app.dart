@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/depot.dart';
+import 'data/recherche_isbn.dart';
+import 'screens/bibliotheque/scanner_isbn_screen.dart';
 import 'screens/racine_screen.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
@@ -12,13 +14,24 @@ import 'state/types_bouteille_controller.dart';
 import 'theme.dart';
 
 class MyTinyMessApp extends StatefulWidget {
-  const MyTinyMessApp({super.key, required this.depot, this.preferences});
+  const MyTinyMessApp({
+    super.key,
+    required this.depot,
+    this.preferences,
+    this.rechercheIsbn,
+    this.scannerIsbn,
+  });
 
   final Depot depot;
 
   /// Préférences déjà chargées (par main.dart, pour ouvrir directement
   /// le bon thème). Sinon elles sont chargées ici.
   final PreferencesController? preferences;
+
+  /// Recherche par ISBN (par défaut : en ligne) et scanner (par défaut :
+  /// appareil photo, si la plateforme en a un). Remplaçables dans les tests.
+  final RechercheIsbn? rechercheIsbn;
+  final ScannerIsbn? scannerIsbn;
 
   @override
   State<MyTinyMessApp> createState() => _MyTinyMessAppState();
@@ -31,6 +44,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final TypesBouteilleController _types;
   late final FrigoController _frigo;
   late final PreferencesController _preferences;
+  final _rechercheIsbn = RechercheIsbnEnLigne();
 
   @override
   void initState() {
@@ -82,6 +96,10 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
           types: _types,
           frigo: _frigo,
           preferences: _preferences,
+          rechercheIsbn: widget.rechercheIsbn ?? _rechercheIsbn,
+          scannerIsbn:
+              widget.scannerIsbn ??
+              (scannerDisponible ? scannerIsbnCamera : null),
         ),
       ),
     );
