@@ -7,7 +7,8 @@ cd /d "%~dp0"
 where flutter >nul 2>nul || set "PATH=C:\Users\benja\Documents\flutter\bin;%PATH%"
 call flutter config --jdk-dir="C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot" >nul
 
-for /f "tokens=2" %%v in ('findstr /b "version:" pubspec.yaml') do set VERSION=%%v
+REM "version: X.Y.Z+N" : on garde X.Y.Z (N = numero de version Android).
+for /f "tokens=2 delims=:+ " %%v in ('findstr /b "version:" pubspec.yaml') do set VERSION=%%v
 set SORTIE=%~dp0livraison
 if not exist "%SORTIE%" mkdir "%SORTIE%"
 echo === Livraison de My Tiny Mess %VERSION% ===
