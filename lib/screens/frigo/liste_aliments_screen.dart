@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/aliment.dart';
 import '../../models/lieu.dart';
+import '../../state/agenda_controller.dart';
 import '../../state/frigo_controller.dart';
 import '../../state/lieux_controller.dart';
 import '../../theme.dart';
@@ -45,9 +46,13 @@ class ListeAlimentsScreen extends StatefulWidget {
     required this.lieux,
     this.menu,
     this.onGererLieux,
+    this.courses,
   });
 
   final FrigoController controller;
+
+  /// Liste de courses (bouton « Ajouter à la liste de courses »).
+  final CoursesController? courses;
   final LieuxController lieux;
   final Widget? menu;
   final VoidCallback? onGererLieux;
@@ -105,7 +110,7 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
       ],
       bouton: BoutonAjout(libelle: 'Ajouter un aliment', onPressed: _ouvrir),
       corps: ListenableBuilder(
-        listenable: Listenable.merge([c, widget.lieux]),
+        listenable: Listenable.merge([c, widget.lieux, ?widget.courses]),
         builder: (context, _) {
           if (!c.charge) {
             return const Center(child: CircularProgressIndicator());
@@ -173,6 +178,15 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
                           onTap: () => _ouvrir(aliments[i]),
                           onAjouter: () => c.ajouterUn(aliments[i].id),
                           onRetirer: () => c.retirerUn(aliments[i].id),
+                          dansLesCourses:
+                              widget.courses?.contient(aliments[i].nom) ??
+                              false,
+                          onCourses: widget.courses == null
+                              ? null
+                              : () => widget.courses!.ajouter(
+                                  aliments[i].nom,
+                                  origine: 'Frigo',
+                                ),
                         ),
                       ),
               ),
@@ -193,9 +207,13 @@ class _LigneAliment extends StatelessWidget {
     required this.onTap,
     required this.onAjouter,
     required this.onRetirer,
+    this.dansLesCourses = false,
+    this.onCourses,
   });
 
   final Aliment aliment;
+  final bool dansLesCourses;
+  final VoidCallback? onCourses;
   final EtatPeremption etat;
   final String? peremption;
   final String? emplacement;
@@ -248,6 +266,19 @@ class _LigneAliment extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (onCourses != null)
+              IconButton(
+                tooltip: dansLesCourses
+                    ? 'Déjà dans la liste de courses'
+                    : 'Ajouter à la liste de courses',
+                icon: Icon(
+                  dansLesCourses
+                      ? Icons.shopping_cart
+                      : Icons.add_shopping_cart,
+                  color: dansLesCourses ? vertOdv : null,
+                ),
+                onPressed: dansLesCourses ? null : onCourses,
+              ),
             IconButton(
               tooltip: 'Retirer 1 du stock',
               icon: const Icon(Icons.remove_circle_outline),

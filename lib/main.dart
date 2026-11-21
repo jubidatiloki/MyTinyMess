@@ -6,11 +6,13 @@ import 'data/base/ouvrir_base.dart';
 import 'data/depot.dart';
 import 'data/depot_base.dart';
 import 'data/fusion_lieux.dart';
+import 'state/agenda_controller.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
 import 'state/frigo_controller.dart';
 import 'state/lieux_controller.dart';
 import 'state/preferences_controller.dart';
+import 'state/recettes_controller.dart';
 import 'state/types_bouteille_controller.dart';
 
 /// Tout ce qui est enregistré par l'application.
@@ -19,6 +21,10 @@ const clesDonnees = [
   CaveController.cle,
   TypesBouteilleController.cle,
   FrigoController.cle,
+  RecettesController.cle,
+  CoursesController.cle,
+  RepasController.cle,
+  EvenementsController.cle,
   LieuxController.cle,
   // Anciennes clés (versions 0.3 à 0.5), fusionnées ensuite dans « lieux ».
   LieuxController.ancienneCleLivres,

@@ -85,3 +85,39 @@ Future<bool> confirmer(BuildContext context, String question) async {
   );
   return reponse ?? false;
 }
+
+const _jours = [
+  'lundi',
+  'mardi',
+  'mercredi',
+  'jeudi',
+  'vendredi',
+  'samedi',
+  'dimanche',
+];
+const _mois = [
+  'janvier',
+  'février',
+  'mars',
+  'avril',
+  'mai',
+  'juin',
+  'juillet',
+  'août',
+  'septembre',
+  'octobre',
+  'novembre',
+  'décembre',
+];
+
+/// « lundi 17 novembre »
+String jourEnLettres(DateTime d) =>
+    '${_jours[d.weekday - 1]} ${d.day} ${_mois[d.month - 1]}';
+
+/// « 17 nov. » (court)
+String jourCourt(DateTime d) =>
+    '${d.day} ${_mois[d.month - 1].substring(0, d.month == 6 || d.month == 7 ? 4 : 3)}.';
+
+/// Lundi de la semaine de [d].
+DateTime debutSemaine(DateTime d) =>
+    DateTime(d.year, d.month, d.day).subtract(Duration(days: d.weekday - 1));

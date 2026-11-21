@@ -3,13 +3,18 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/depot.dart';
 import 'data/recherche_isbn.dart';
+import 'data/recherche_recettes.dart';
+import 'models/recette.dart';
 import 'screens/bibliotheque/scanner_isbn_screen.dart';
 import 'screens/racine_screen.dart';
+import 'state/agenda_controller.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/cave_controller.dart';
+import 'state/cuisine.dart';
 import 'state/frigo_controller.dart';
 import 'state/lieux_controller.dart';
 import 'state/preferences_controller.dart';
+import 'state/recettes_controller.dart';
 import 'state/types_bouteille_controller.dart';
 import 'theme.dart';
 
@@ -20,6 +25,8 @@ class MyTinyMessApp extends StatefulWidget {
     this.preferences,
     this.rechercheIsbn,
     this.scannerIsbn,
+    this.rechercheRecettes,
+    this.chargerRecettesIntegrees,
   });
 
   final Depot depot;
@@ -33,6 +40,12 @@ class MyTinyMessApp extends StatefulWidget {
   final RechercheIsbn? rechercheIsbn;
   final ScannerIsbn? scannerIsbn;
 
+  /// Recherche de recettes en ligne (par défaut : TheMealDB).
+  final RechercheRecettes? rechercheRecettes;
+
+  /// Lecture du carnet intégré (par défaut : fichier de l'appli).
+  final Future<List<Recette>> Function()? chargerRecettesIntegrees;
+
   @override
   State<MyTinyMessApp> createState() => _MyTinyMessAppState();
 }
@@ -43,6 +56,11 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final CaveController _cave;
   late final TypesBouteilleController _types;
   late final FrigoController _frigo;
+  late final RecettesController _recettes;
+  late final CoursesController _courses;
+  late final RepasController _repas;
+  late final EvenementsController _evenements;
+  late final Cuisine _cuisine;
   late final PreferencesController _preferences;
   final _rechercheIsbn = RechercheIsbnEnLigne();
 
@@ -56,6 +74,21 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
     _cave = CaveController(depot, lieux: _lieux);
     _types = TypesBouteilleController(depot)..charger();
     _frigo = FrigoController(depot, lieux: _lieux)..charger();
+    _recettes = RecettesController(
+      depot,
+      chargerIntegrees: widget.chargerRecettesIntegrees,
+    )..charger();
+    _courses = CoursesController(depot)..charger();
+    _repas = RepasController(depot)..charger();
+    _evenements = EvenementsController(depot)..charger();
+    _cuisine = Cuisine(
+      recettes: _recettes,
+      frigo: _frigo,
+      courses: _courses,
+      repas: _repas,
+      evenements: _evenements,
+      enLigne: widget.rechercheRecettes ?? RechercheRecettesEnLigne(),
+    );
     // Les anciennes zones de la cave deviennent des lieux une fois tout lu.
     Future.wait([
       _lieux.charger(),
@@ -67,7 +100,17 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
 
   @override
   void dispose() {
-    for (final c in [_lieux, _bibliotheque, _cave, _types, _frigo]) {
+    for (final c in [
+      _lieux,
+      _bibliotheque,
+      _cave,
+      _types,
+      _frigo,
+      _recettes,
+      _courses,
+      _repas,
+      _evenements,
+    ]) {
       c.dispose();
     }
     if (widget.preferences == null) {
@@ -96,6 +139,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
           types: _types,
           frigo: _frigo,
           preferences: _preferences,
+          cuisine: _cuisine,
           rechercheIsbn: widget.rechercheIsbn ?? _rechercheIsbn,
           scannerIsbn:
               widget.scannerIsbn ??

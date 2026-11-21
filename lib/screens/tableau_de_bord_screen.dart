@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../models/agenda.dart';
 import '../models/lieu.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
+import '../state/cuisine.dart';
 import '../state/frigo_controller.dart';
 import '../state/lieux_controller.dart';
 import '../theme.dart';
+import '../widgets/communs.dart';
 import '../widgets/lieux.dart';
 import '../widgets/page.dart';
 
@@ -19,6 +22,7 @@ class TableauDeBordScreen extends StatelessWidget {
     required this.bibliotheque,
     required this.cave,
     required this.frigo,
+    required this.cuisine,
     required this.lieux,
     required this.onOuvrir,
     this.menu,
@@ -27,6 +31,9 @@ class TableauDeBordScreen extends StatelessWidget {
   final BibliothequeController bibliotheque;
   final CaveController cave;
   final FrigoController frigo;
+
+  /// Agenda, repas et courses (carte « Aujourd'hui »).
+  final Cuisine cuisine;
   final LieuxController lieux;
   final ValueChanged<Section> onOuvrir;
   final Widget? menu;
@@ -38,7 +45,7 @@ class TableauDeBordScreen extends StatelessWidget {
       sousTitre: 'Vos collections en un coup d\'œil',
       menu: menu,
       corps: ListenableBuilder(
-        listenable: Listenable.merge([bibliotheque, cave, frigo, lieux]),
+        listenable: Listenable.merge([bibliotheque, cave, lieux, cuisine.tout]),
         builder: (context, _) {
           final aSurveiller = frigo.nombreASurveiller;
           return SingleChildScrollView(
@@ -66,6 +73,8 @@ class TableauDeBordScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+                const TitreSection('Aujourd\'hui'),
+                _aujourdhui(context),
                 if (lieux.elements.isEmpty) ...[
                   const TitreSection('Emplacements'),
                   _aucunEmplacement(),
@@ -79,6 +88,65 @@ class TableauDeBordScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  /// Événements et repas du jour, articles à acheter.
+  Widget _aujourdhui(BuildContext context) {
+    final p = PaletteOdv.de(context);
+    final jour = DateTime.now();
+    final evenements = cuisine.evenements.du(jour);
+    String? repas(MomentRepas m) {
+      final r = cuisine.repas.du(jour, m);
+      return cuisine.recettes.recette(r?.recetteId)?.nom ?? r?.libelle;
+    }
+
+    final aAcheter = cuisine.courses.nombreAAcheter;
+    return CarteGroupe(
+      key: const Key('carte-aujourdhui'),
+      enfants: [
+        ListTile(
+          leading: const IconeCarree(Icons.calendar_month_outlined),
+          title: Text(
+            evenements.isEmpty
+                ? 'Aucun événement'
+                : evenements
+                      .map((e) => [?e.heure, e.titre].join(' · '))
+                      .join('\n'),
+          ),
+          subtitle: Text(jourEnLettres(jour)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => onOuvrir(Section.agenda),
+        ),
+        for (final m in MomentRepas.values)
+          ListTile(
+            leading: IconeCarree(
+              m == MomentRepas.midi
+                  ? Icons.wb_sunny_outlined
+                  : Icons.nightlight_outlined,
+            ),
+            title: Text(
+              repas(m) ?? 'Rien de prévu',
+              style: repas(m) == null
+                  ? TextStyle(color: p.texteSecondaire)
+                  : null,
+            ),
+            subtitle: Text(m.libelle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () =>
+                onOuvrir(repas(m) == null ? Section.recettes : Section.agenda),
+          ),
+        ListTile(
+          leading: const IconeCarree(Icons.shopping_cart_outlined),
+          title: Text(
+            aAcheter == 0
+                ? 'Liste de courses vide'
+                : '$aAcheter article${aAcheter > 1 ? 's' : ''} à acheter',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => onOuvrir(Section.courses),
+        ),
+      ],
     );
   }
 

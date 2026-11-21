@@ -4,18 +4,22 @@ import '../data/recherche_isbn.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
+import '../state/cuisine.dart';
 import '../state/frigo_controller.dart';
 import '../state/lieux_controller.dart';
 import '../state/preferences_controller.dart';
 import '../state/types_bouteille_controller.dart';
 import '../widgets/menu_lateral.dart';
+import 'agenda/agenda_screen.dart';
 import 'bibliotheque/liste_livres_screen.dart';
 import 'bibliotheque/scanner_isbn_screen.dart';
 import 'cave/liste_bouteilles_screen.dart';
+import 'courses/courses_screen.dart';
 import 'frigo/liste_aliments_screen.dart';
 import 'lieux_screen.dart';
 import 'pages_simples.dart';
 import 'preferences_screen.dart';
+import 'repas/recettes_screen.dart';
 import 'tableau_de_bord_screen.dart';
 
 /// Affiche la rubrique choisie dans le menu latéral.
@@ -28,6 +32,7 @@ class RacineScreen extends StatefulWidget {
     required this.frigo,
     required this.lieux,
     required this.preferences,
+    required this.cuisine,
     this.rechercheIsbn,
     this.scannerIsbn,
   });
@@ -43,6 +48,9 @@ class RacineScreen extends StatefulWidget {
   /// Emplacements (livres, cave et frigo).
   final LieuxController lieux;
   final PreferencesController preferences;
+
+  /// Recettes, frigo, courses et agenda (rubriques Repas, Courses, Agenda).
+  final Cuisine cuisine;
 
   /// Recherche des livres par ISBN et scanner de code-barres.
   final RechercheIsbn? rechercheIsbn;
@@ -61,6 +69,7 @@ class _RacineScreenState extends State<RacineScreen> {
 
   Widget _ecran(Widget? menu) => switch (_section) {
     Section.accueil => TableauDeBordScreen(
+      cuisine: widget.cuisine,
       bibliotheque: widget.bibliotheque,
       cave: widget.cave,
       frigo: widget.frigo,
@@ -88,7 +97,11 @@ class _RacineScreenState extends State<RacineScreen> {
       lieux: widget.lieux,
       menu: menu,
       onGererLieux: _gererLieux,
+      courses: widget.cuisine.courses,
     ),
+    Section.recettes => RecettesScreen(cuisine: widget.cuisine, menu: menu),
+    Section.courses => CoursesScreen(cuisine: widget.cuisine, menu: menu),
+    Section.agenda => AgendaScreen(cuisine: widget.cuisine, menu: menu),
     Section.emplacements => LieuxScreen(
       lieux: widget.lieux,
       bibliotheque: widget.bibliotheque,

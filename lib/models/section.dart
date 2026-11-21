@@ -4,6 +4,9 @@ enum Section {
   bibliotheque('Ma bibliothèque'),
   cave('Ma cave'),
   frigo('Mon frigo'),
+  recettes('Repas & recettes'),
+  courses('Liste de courses'),
+  agenda('Agenda'),
   emplacements('Emplacements'),
   bazar('Mon bazar'),
   preferences('Préférences'),
@@ -13,7 +16,7 @@ enum Section {
   final String libelle;
 
   /// Rubriques proposées comme écran d'ouverture de l'application.
-  static const demarrages = [accueil, bibliotheque, cave, frigo];
+  static const demarrages = [accueil, bibliotheque, cave, frigo, agenda];
 
   /// Rubriques « collections » (le reste est séparé par un trait).
   static const collections = [
@@ -21,6 +24,9 @@ enum Section {
     bibliotheque,
     cave,
     frigo,
+    recettes,
+    courses,
+    agenda,
     emplacements,
     bazar,
   ];

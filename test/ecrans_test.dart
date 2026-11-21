@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_tiny_mess/app.dart';
 import 'package:my_tiny_mess/data/depot.dart';
 import 'package:my_tiny_mess/data/recherche_isbn.dart';
+import 'package:my_tiny_mess/data/recherche_recettes.dart';
+import 'package:my_tiny_mess/models/recette.dart';
 import 'package:my_tiny_mess/models/aliment.dart';
 import 'package:my_tiny_mess/models/bouteille.dart';
 import 'package:my_tiny_mess/models/livre.dart';
@@ -14,6 +19,20 @@ import 'package:my_tiny_mess/state/preferences_controller.dart';
 import 'package:my_tiny_mess/widgets/icone_app.dart';
 
 /// Recherche par ISBN simulée (pas d'Internet dans les tests).
+/// Recherche de recettes en ligne simulée.
+class _RecettesEnLigneFausses implements RechercheRecettes {
+  @override
+  Future<List<Recette>> chercher(String texte) async => [
+    const Recette(
+      id: 'mealdb-1',
+      nom: 'Teriyaki Chicken',
+      ingredients: [Ingredient(nom: 'Chicken')],
+      etapes: 'Cook.',
+      source: SourceRecette.enLigne,
+    ),
+  ];
+}
+
 class _RechercheFausse implements RechercheIsbn {
   @override
   Future<InfosLivre?> chercher(String isbn) async => isbn == _isbnConnu
@@ -37,6 +56,19 @@ void main() {
         rechercheIsbn: _RechercheFausse(),
         // « Appareil photo » simulé : lit toujours le même code-barres.
         scannerIsbn: (_) async => _isbnConnu,
+        rechercheRecettes: _RecettesEnLigneFausses(),
+        // Carnet intégré lu tout de suite (le vrai fichier de l'appli).
+        chargerRecettesIntegrees: () async => [
+          for (final r
+              in jsonDecode(
+                    File('assets/data/recettes.json').readAsStringSync(),
+                  )
+                  as List)
+            Recette.fromJson(
+              (r as Map).cast<String, dynamic>(),
+              source: SourceRecette.integree,
+            ),
+        ],
       ),
     );
     await tester.pumpAndSettle();
@@ -51,7 +83,26 @@ void main() {
       await tester.tap(burger);
       await tester.pumpAndSettle();
     }
-    await tester.tap(find.byKey(Key('menu-${section.name}')));
+    // Le menu est long : on fait défiler jusqu'à la rubrique si besoin.
+    final rubrique = find.byKey(Key('menu-${section.name}'));
+    if (rubrique.evaluate().isEmpty) {
+      final liste = find
+          .descendant(
+            of: find.byType(Drawer),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      // Remonte en haut du menu, puis descend jusqu'à la rubrique.
+      await tester.drag(liste, const Offset(0, 1000));
+      await tester.pumpAndSettle();
+      if (rubrique.evaluate().isEmpty) {
+        await tester.scrollUntilVisible(rubrique, 60, scrollable: liste);
+      }
+    } else {
+      await tester.ensureVisible(rubrique);
+    }
+    await tester.pumpAndSettle();
+    await tester.tap(rubrique);
     await tester.pumpAndSettle();
   }
 
@@ -656,5 +707,128 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Mon titre'), findsOneWidget);
     expect(find.text('Antoine de Saint-Exupéry'), findsOneWidget);
+  });
+
+  testWidgets('frigo → liste de courses → rangé dans le frigo', (tester) async {
+    final depot = DepotMemoire();
+    await depot.ecrire('aliments', [
+      const Aliment(id: 'lait', nom: 'Lait', quantite: 1).toJson(),
+    ]);
+    await lancer(tester, depot);
+    await ouvrir(tester, Section.frigo);
+    await tester.tap(find.byTooltip('Ajouter à la liste de courses'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Déjà dans la liste de courses'), findsOneWidget);
+
+    await ouvrir(tester, Section.courses);
+    expect(find.text('1 article à acheter'), findsOneWidget);
+    expect(find.text('Lait'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('champ-article')), 'Pain');
+    await tester.tap(find.byTooltip('Ajouter à la liste'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 articles à acheter'), findsOneWidget);
+
+    // On coche le lait (acheté) et on le range dans le frigo.
+    await tester.tap(find.text('Lait'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('ranger-frigo')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 article rangé dans le frigo.'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lait'), findsNothing);
+    expect(Aliment.fromJson((await depot.lire('aliments')).single).quantite, 2);
+  });
+
+  testWidgets('repas : proposition selon le frigo, courses et agenda', (
+    tester,
+  ) async {
+    final depot = DepotMemoire();
+    await depot.ecrire('aliments', [
+      const Aliment(id: 'o', nom: 'Oeufs', quantite: 6).toJson(),
+      const Aliment(id: 'c', nom: 'Ciboulette').toJson(),
+    ]);
+    await lancer(tester, depot);
+    await ouvrir(tester, Section.recettes);
+    // L'omelette aux fines herbes est complète avec œufs et ciboulette… sauf
+    // le beurre : elle est proposée en tête.
+    final omelette = find.byKey(const Key('suggestion-int-omelette'));
+    expect(omelette, findsOneWidget);
+    await tester.tap(omelette);
+    await tester.pumpAndSettle();
+    expect(find.text('Manquant'), findsOneWidget); // le beurre
+
+    await tester.ensureVisible(find.byKey(const Key('manquants-courses')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('manquants-courses')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('1 article ajouté à la liste de courses.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    final courses = await depot.lire('courses');
+    expect(courses.single['nom'], 'beurre');
+
+    await tester.ensureVisible(find.byKey(const Key('prevoir-recette')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('prevoir-recette')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('valider-moment')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('prévu'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    final repas = (await depot.lire('repas')).single;
+    expect(repas['recetteId'], 'int-omelette');
+    expect(repas['moment'], 'soir');
+  });
+
+  testWidgets('agenda : événement et repas libre du jour', (tester) async {
+    final depot = await lancer(tester);
+    await ouvrir(tester, Section.agenda);
+    await tester.tap(find.byTooltip('Ajouter un événement'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('champ-titre-evenement')),
+      'Dîner chez Paul',
+    );
+    await tester.tap(find.byKey(const Key('valider-evenement')));
+    await tester.pumpAndSettle();
+    final ev = (await depot.lire('evenements')).single;
+    expect(ev['titre'], 'Dîner chez Paul');
+
+    // Vue d'ensemble : l'événement du jour apparaît.
+    await ouvrir(tester, Section.accueil);
+    expect(find.text('Dîner chez Paul'), findsOneWidget);
+  });
+
+  testWidgets('recettes en ligne : ajout au carnet', (tester) async {
+    await lancer(tester);
+    await ouvrir(tester, Section.recettes);
+    await tester.tap(find.text('En ligne'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('champ-recherche-en-ligne')),
+      'chicken',
+    );
+    await tester.tap(find.byTooltip('Chercher en ligne'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Teriyaki Chicken'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('bouton-enregistrer')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('ajoutée à votre carnet'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Carnet'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'teriyaki');
+    await tester.pumpAndSettle();
+    expect(find.text('Teriyaki Chicken'), findsOneWidget);
+    expect(find.text('Ma recette'), findsOneWidget);
   });
 }
