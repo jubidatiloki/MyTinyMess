@@ -8,6 +8,7 @@ import 'data/depot_base.dart';
 import 'data/fusion_lieux.dart';
 import 'state/agenda_controller.dart';
 import 'state/bibliotheque_controller.dart';
+import 'state/categories_controller.dart';
 import 'state/cave_controller.dart';
 import 'state/frigo_controller.dart';
 import 'state/lieux_controller.dart';
@@ -21,6 +22,7 @@ const clesDonnees = [
   CaveController.cle,
   TypesBouteilleController.cle,
   FrigoController.cle,
+  CategoriesController.cle,
   RecettesController.cle,
   CoursesController.cle,
   RepasController.cle,

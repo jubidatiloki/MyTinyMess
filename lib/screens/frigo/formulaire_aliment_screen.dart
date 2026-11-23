@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/aliment.dart';
 import '../../models/lieu.dart';
+import '../../state/categories_controller.dart';
 import '../../state/frigo_controller.dart';
 import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
@@ -35,7 +36,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
   final _form = GlobalKey<FormState>();
   late final Aliment? _a = widget.aliment;
   late final _nom = TextEditingController(text: _a?.nom);
-  late final _categorie = TextEditingController(text: _a?.categorie);
+  late String? _categorie = _a?.categorie;
   late final _quantite = TextEditingController(text: '${_a?.quantite ?? 1}');
   late final _contenance = TextEditingController(text: _a?.contenance);
   late final _notes = TextEditingController(text: _a?.notes);
@@ -46,7 +47,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
 
   @override
   void dispose() {
-    for (final c in [_nom, _categorie, _quantite, _contenance, _notes]) {
+    for (final c in [_nom, _quantite, _contenance, _notes]) {
       c.dispose();
     }
     super.dispose();
@@ -74,7 +75,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
       Aliment(
         id: _a?.id ?? const Uuid().v4(),
         nom: _nom.text.trim(),
-        categorie: texteOuNull(_categorie.text),
+        categorie: _categorie,
         quantite: entierOuNull(_quantite.text) ?? 1,
         contenance: texteOuNull(_contenance.text),
         datePeremption: _peremption,
@@ -185,13 +186,27 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
               ),
             ),
             espace,
-            TextFormField(
-              controller: _categorie,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Catégorie',
-                hintText: 'Laitage, viande, légumes…',
-              ),
+            DropdownButtonFormField<String?>(
+              key: const Key('champ-categorie'),
+              initialValue: widget.controller.categories
+                  ?.parNom(_categorie)
+                  ?.nom,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Catégorie'),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Sans catégorie'),
+                ),
+                for (final c
+                    in widget.controller.categories?.elements ??
+                        const <CategorieAliment>[])
+                  DropdownMenuItem(
+                    value: c.nom,
+                    child: Text(c.nom, overflow: TextOverflow.ellipsis),
+                  ),
+              ],
+              onChanged: (c) => setState(() => _categorie = c),
             ),
             espace,
             ChampLieu(

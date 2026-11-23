@@ -65,6 +65,30 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
   String _recherche = '';
   FiltreAliments _filtre = FiltreAliments.tous;
   String? _lieu;
+  String? _categorie;
+
+  Future<void> _choisirCategorie() async {
+    final choix = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Filtrer par catégorie'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, ''),
+            child: const Text('Toutes les catégories'),
+          ),
+          for (final c in widget.controller.categories!.elements)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, c.nom),
+              child: Text(c.nom),
+            ),
+        ],
+      ),
+    );
+    if (choix != null) {
+      setState(() => _categorie = choix.isEmpty ? null : choix);
+    }
+  }
 
   Future<void> _ouvrir([Aliment? aliment]) async {
     await Navigator.push(
@@ -110,13 +134,21 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
       ],
       bouton: BoutonAjout(libelle: 'Ajouter un aliment', onPressed: _ouvrir),
       corps: ListenableBuilder(
-        listenable: Listenable.merge([c, widget.lieux, ?widget.courses]),
+        listenable: Listenable.merge([
+          c,
+          widget.lieux,
+          ?widget.courses,
+          ?c.categories,
+        ]),
         builder: (context, _) {
           if (!c.charge) {
             return const Center(child: CircularProgressIndicator());
           }
           final lieu = widget.lieux.parId(_lieu ?? '') == null ? null : _lieu;
+          // Catégorie supprimée ou renommée entre-temps : on revient à toutes.
+          final categorie = c.categories?.parNom(_categorie)?.nom;
           final aliments = c.rechercher(
+            categorie: categorie,
             texte: _recherche,
             filtre: _filtre,
             lieuId: lieu,
@@ -141,6 +173,21 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
                           type: TypeLieu.frigo,
                           valeur: lieu,
                           onChanged: (v) => setState(() => _lieu = v),
+                        ),
+                      ),
+                    if (c.categories != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: InputChip(
+                          key: const Key('filtre-categorie'),
+                          avatar: const Icon(Icons.label_outline, size: 18),
+                          label: Text(categorie ?? 'Catégories'),
+                          selected: categorie != null,
+                          showCheckmark: false,
+                          onPressed: _choisirCategorie,
+                          onDeleted: categorie == null
+                              ? null
+                              : () => setState(() => _categorie = null),
                         ),
                       ),
                     for (final f in FiltreAliments.values)
@@ -239,7 +286,10 @@ class _LigneAliment extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              a.enStock ? (peremption ?? 'Pas de date') : 'Épuisé',
+              [
+                a.enStock ? (peremption ?? 'Pas de date') : 'Épuisé',
+                ?a.categorie,
+              ].join(' · '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

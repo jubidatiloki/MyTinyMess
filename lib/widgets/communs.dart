@@ -120,4 +120,11 @@ String jourCourt(DateTime d) =>
 
 /// Lundi de la semaine de [d].
 DateTime debutSemaine(DateTime d) =>
-    DateTime(d.year, d.month, d.day).subtract(Duration(days: d.weekday - 1));
+    DateTime(d.year, d.month, d.day - (d.weekday - 1));
+
+/// [n] jours plus tard (ou plus tôt), même aux changements d'heure, où une
+/// journée ne dure pas 24 heures.
+DateTime plusJours(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
+
+/// « novembre 2026 »
+String moisEnLettres(DateTime d) => '${_mois[d.month - 1]} ${d.year}';

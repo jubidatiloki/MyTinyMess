@@ -8,6 +8,7 @@ import '../state/cave_controller.dart';
 import '../state/cuisine.dart';
 import '../state/frigo_controller.dart';
 import '../state/lieux_controller.dart';
+import '../state/preferences_controller.dart';
 import '../theme.dart';
 import '../widgets/communs.dart';
 import '../widgets/lieux.dart';
@@ -23,6 +24,7 @@ class TableauDeBordScreen extends StatelessWidget {
     required this.cave,
     required this.frigo,
     required this.cuisine,
+    required this.preferences,
     required this.lieux,
     required this.onOuvrir,
     this.menu,
@@ -35,6 +37,9 @@ class TableauDeBordScreen extends StatelessWidget {
   /// Agenda, repas et courses (carte « Aujourd'hui »).
   final Cuisine cuisine;
   final LieuxController lieux;
+
+  /// Mémorise les groupes d'emplacements repliés.
+  final PreferencesController preferences;
   final ValueChanged<Section> onOuvrir;
   final Widget? menu;
 
@@ -45,7 +50,13 @@ class TableauDeBordScreen extends StatelessWidget {
       sousTitre: 'Vos collections en un coup d\'œil',
       menu: menu,
       corps: ListenableBuilder(
-        listenable: Listenable.merge([bibliotheque, cave, lieux, cuisine.tout]),
+        listenable: Listenable.merge([
+          bibliotheque,
+          cave,
+          lieux,
+          preferences,
+          cuisine.tout,
+        ]),
         builder: (context, _) {
           final aSurveiller = frigo.nombreASurveiller;
           return SingleChildScrollView(
@@ -78,11 +89,10 @@ class TableauDeBordScreen extends StatelessWidget {
                 if (lieux.elements.isEmpty) ...[
                   const TitreSection('Emplacements'),
                   _aucunEmplacement(),
-                ] else
-                  for (final type in TypeLieu.values) ...[
-                    TitreSection('Emplacements · ${type.libelle}'),
-                    _emplacements(type),
-                  ],
+                ] else ...[
+                  _titreEmplacements(),
+                  for (final type in TypeLieu.values) _emplacements(type),
+                ],
               ],
             ),
           );
@@ -174,10 +184,45 @@ class TableauDeBordScreen extends StatelessWidget {
 
   bool _sansLieu(String? lieuId) => lieux.parId(lieuId ?? '') == null;
 
-  /// Les emplacements d'un type avec ce qu'ils contiennent (sous-emplacements
-  /// compris), puis ce qui n'est rangé nulle part.
+  /// « Emplacements » et le bouton qui replie ou déplie tous les groupes.
+  Widget _titreEmplacements() {
+    final toutReplie = TypeLieu.values.every(
+      (t) => preferences.replies.contains(t.name),
+    );
+    return Row(
+      children: [
+        const Expanded(child: TitreSection('Emplacements')),
+        TextButton.icon(
+          key: const Key('regrouper-emplacements'),
+          icon: Icon(toutReplie ? Icons.unfold_more : Icons.unfold_less),
+          label: Text(toutReplie ? 'Tout déplier' : 'Tout regrouper'),
+          onPressed: () => preferences.changerReplies(
+            toutReplie ? {} : {for (final t in TypeLieu.values) t.name},
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Emplacements visibles : sans le contenu de ceux qui sont repliés.
+  List<NoeudLieu> _visibles(List<NoeudLieu> noeuds) {
+    final resultat = <NoeudLieu>[];
+    int? replie;
+    for (final n in noeuds) {
+      if (replie != null && n.profondeur > replie) {
+        continue;
+      }
+      replie = preferences.replies.contains(n.lieu.id) ? n.profondeur : null;
+      resultat.add(n);
+    }
+    return resultat;
+  }
+
+  /// Un groupe (repliable) par type : les emplacements avec ce qu'ils
+  /// contiennent (sous-emplacements compris), puis ce qui n'est pas rangé.
   Widget _emplacements(TypeLieu type) {
     final noeuds = lieux.arbre(type: type);
+    final replie = preferences.replies.contains(type.name);
     final sansLieu = switch (type) {
       TypeLieu.livres =>
         bibliotheque.elements
@@ -192,9 +237,26 @@ class TableauDeBordScreen extends StatelessWidget {
             .where((a) => _sansLieu(a.lieuId))
             .fold(0, (s, a) => s + a.quantite),
     };
-    return CarteGroupe(
+    final total = noeuds
+        .where((n) => n.profondeur == 0)
+        .fold(sansLieu, (s, n) => s + _nombreDans(type, n.lieu.id));
+    final carte = CarteGroupe(
       enfants: [
-        if (noeuds.isEmpty)
+        ListTile(
+          key: Key('groupe-${type.name}'),
+          leading: IconeCarree(iconeTypeLieu(type)),
+          title: Text(
+            type.libelle,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            '$total ${total > 1 ? type.contenu : type.unite} · '
+            '${noeuds.length} emplacement${noeuds.length > 1 ? 's' : ''}',
+          ),
+          trailing: Icon(replie ? Icons.expand_more : Icons.expand_less),
+          onTap: () => preferences.basculerRepli(type.name),
+        ),
+        if (!replie && noeuds.isEmpty)
           ListTile(
             leading: IconeCarree(iconeTypeLieu(type)),
             title: Text('Aucun emplacement pour les ${type.contenu}'),
@@ -203,16 +265,20 @@ class TableauDeBordScreen extends StatelessWidget {
               child: const Text('Créer'),
             ),
           ),
-        for (final n in noeuds)
+        for (final n in replie ? const <NoeudLieu>[] : _visibles(noeuds))
           _LigneEmplacement(
             key: Key('resume-lieu-${n.lieu.id}'),
             nom: n.lieu.nom,
             profondeur: n.profondeur,
             type: type,
             nombre: _nombreDans(type, n.lieu.id),
+            replie: lieux.enfants(n.lieu.id).isEmpty
+                ? null
+                : preferences.replies.contains(n.lieu.id),
+            onReplier: () => preferences.basculerRepli(n.lieu.id),
             onTap: () => onOuvrir(Section.emplacements),
           ),
-        if (sansLieu > 0)
+        if (!replie && sansLieu > 0)
           _LigneEmplacement(
             key: Key('resume-lieu-aucun-${type.name}'),
             nom: 'Sans emplacement',
@@ -223,6 +289,7 @@ class TableauDeBordScreen extends StatelessWidget {
           ),
       ],
     );
+    return Padding(padding: const EdgeInsets.only(bottom: 12), child: carte);
   }
 
   Widget _tuiles() {
@@ -275,6 +342,8 @@ class _LigneEmplacement extends StatelessWidget {
     required this.nombre,
     this.onTap,
     this.discret = false,
+    this.replie,
+    this.onReplier,
   });
 
   final String nom;
@@ -287,6 +356,10 @@ class _LigneEmplacement extends StatelessWidget {
 
   /// Ligne « Sans emplacement » : en italique.
   final bool discret;
+
+  /// Contenu replié ou non (null = pas de sous-emplacement).
+  final bool? replie;
+  final VoidCallback? onReplier;
 
   @override
   Widget build(BuildContext context) {
@@ -331,6 +404,12 @@ class _LigneEmplacement extends StatelessWidget {
                 ),
               ),
             ),
+            if (replie != null)
+              IconButton(
+                tooltip: replie! ? 'Déplier' : 'Regrouper',
+                icon: Icon(replie! ? Icons.expand_more : Icons.expand_less),
+                onPressed: onReplier,
+              ),
           ],
         ),
       ),

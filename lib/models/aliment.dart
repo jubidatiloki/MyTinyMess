@@ -46,7 +46,9 @@ class Aliment {
 
   bool get enStock => quantite > 0;
 
-  static DateTime _jour(DateTime d) => DateTime(d.year, d.month, d.day);
+  static DateTime _jour(DateTime d) =>
+      // En UTC : une journée y dure toujours 24 heures (changements d'heure).
+      DateTime.utc(d.year, d.month, d.day);
 
   /// Jours restants avant la péremption (négatif si dépassée), ou null.
   int? joursRestants(DateTime aujourdhui) {
@@ -68,11 +70,15 @@ class Aliment {
     return j <= joursAlerte ? EtatPeremption.bientot : EtatPeremption.ok;
   }
 
-  Aliment avecQuantite(int q) => Aliment(
+  Aliment avecQuantite(int q) => _copie(quantite: q < 0 ? 0 : q);
+
+  Aliment avecCategorie(String c) => _copie(categorie: c);
+
+  Aliment _copie({int? quantite, String? categorie}) => Aliment(
     id: id,
     nom: nom,
-    categorie: categorie,
-    quantite: q < 0 ? 0 : q,
+    categorie: categorie ?? this.categorie,
+    quantite: quantite ?? this.quantite,
     contenance: contenance,
     datePeremption: datePeremption,
     dateAjout: dateAjout,

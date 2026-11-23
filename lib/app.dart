@@ -9,6 +9,7 @@ import 'screens/bibliotheque/scanner_isbn_screen.dart';
 import 'screens/racine_screen.dart';
 import 'state/agenda_controller.dart';
 import 'state/bibliotheque_controller.dart';
+import 'state/categories_controller.dart';
 import 'state/cave_controller.dart';
 import 'state/cuisine.dart';
 import 'state/frigo_controller.dart';
@@ -55,6 +56,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final BibliothequeController _bibliotheque;
   late final CaveController _cave;
   late final TypesBouteilleController _types;
+  late final CategoriesController _categories;
   late final FrigoController _frigo;
   late final RecettesController _recettes;
   late final CoursesController _courses;
@@ -73,7 +75,13 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
     _bibliotheque = BibliothequeController(depot, lieux: _lieux)..charger();
     _cave = CaveController(depot, lieux: _lieux);
     _types = TypesBouteilleController(depot)..charger();
-    _frigo = FrigoController(depot, lieux: _lieux)..charger();
+    _categories = CategoriesController(depot);
+    _frigo = FrigoController(depot, lieux: _lieux, categories: _categories);
+    // Les catégories saisies librement avant rejoignent la liste.
+    Future.wait([
+      _categories.charger(),
+      _frigo.charger(),
+    ]).then((_) => _frigo.reprendreCategories());
     _recettes = RecettesController(
       depot,
       chargerIntegrees: widget.chargerRecettesIntegrees,
@@ -105,6 +113,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
       _bibliotheque,
       _cave,
       _types,
+      _categories,
       _frigo,
       _recettes,
       _courses,
@@ -137,6 +146,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
           lieux: _lieux,
           cave: _cave,
           types: _types,
+          categories: _categories,
           frigo: _frigo,
           preferences: _preferences,
           cuisine: _cuisine,

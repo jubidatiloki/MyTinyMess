@@ -1,5 +1,6 @@
 import '../data/depot.dart';
 import '../models/aliment.dart';
+import 'categories_controller.dart';
 import 'collection_controller.dart';
 import 'lieux_controller.dart';
 
@@ -15,14 +16,21 @@ enum FiltreAliments {
 
 /// Le frigo : aliments, quantités et dates de péremption.
 class FrigoController extends CollectionController<Aliment> {
-  FrigoController(Depot depot, {this.lieux, DateTime Function()? maintenant})
-    : _maintenant = maintenant ?? DateTime.now,
-      super(depot, cle);
+  FrigoController(
+    Depot depot, {
+    this.lieux,
+    this.categories,
+    DateTime Function()? maintenant,
+  }) : _maintenant = maintenant ?? DateTime.now,
+       super(depot, cle);
 
   static const cle = 'aliments';
 
   /// Emplacements (ceux de type frigo).
   LieuxController? lieux;
+
+  /// Catégories d'aliments (liste paramétrable).
+  final CategoriesController? categories;
   final DateTime Function() _maintenant;
 
   DateTime get aujourdhui => _maintenant();
@@ -57,6 +65,36 @@ class FrigoController extends CollectionController<Aliment> {
         .fold(0, (s, a) => s + a.quantite);
   }
 
+  /// Aliments d'une catégorie (accents et majuscules ignorés).
+  Iterable<Aliment> dansCategorie(String nom) => elements.where(
+    (a) => normaliser((a.categorie ?? '').trim()) == normaliser(nom.trim()),
+  );
+
+  Future<void> renommerCategorie(String ancien, String nouveau) async {
+    for (final a in dansCategorie(ancien).toList()) {
+      await enregistrer(a.avecCategorie(nouveau));
+    }
+  }
+
+  /// Catégories saisies librement avant la version 0.12 : ajoutées à la
+  /// liste si elles n'y sont pas, pour n'en perdre aucune.
+  Future<void> reprendreCategories() async {
+    final liste = categories;
+    if (liste == null) {
+      return;
+    }
+    for (final a in elements.toList()) {
+      final nom = a.categorie?.trim() ?? '';
+      if (nom.isEmpty) {
+        continue;
+      }
+      final c = liste.parNom(nom) ?? await liste.creer(nom);
+      if (c.nom != a.categorie) {
+        await enregistrer(a.avecCategorie(c.nom));
+      }
+    }
+  }
+
   String? emplacementDe(Aliment a) => lieux?.chemin(a.lieuId);
 
   Future<void> ajouterUn(String id) => _changer(id, 1);
@@ -76,6 +114,7 @@ class FrigoController extends CollectionController<Aliment> {
     String texte = '',
     FiltreAliments filtre = FiltreAliments.tous,
     String? lieuId,
+    String? categorie,
   }) {
     final t = normaliser(texte.trim());
     final dansLieu = lieuId == null
@@ -90,6 +129,10 @@ class FrigoController extends CollectionController<Aliment> {
         FiltreAliments.epuises => !a.enStock,
       };
       if (!garde) {
+        return false;
+      }
+      if (categorie != null &&
+          normaliser(a.categorie ?? '') != normaliser(categorie)) {
         return false;
       }
       if (dansLieu != null && !dansLieu.contains(a.lieuId)) {

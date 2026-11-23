@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/section.dart';
+import '../state/categories_controller.dart';
 import '../state/cave_controller.dart';
+import '../state/frigo_controller.dart';
 import '../state/preferences_controller.dart';
 import '../state/types_bouteille_controller.dart';
 import '../theme.dart';
 import '../widgets/page.dart';
 import 'cave/types_bouteille_screen.dart';
+import 'frigo/categories_screen.dart';
 
 class PreferencesScreen extends StatelessWidget {
   const PreferencesScreen({
@@ -14,12 +17,16 @@ class PreferencesScreen extends StatelessWidget {
     required this.controller,
     required this.types,
     required this.cave,
+    required this.categories,
+    required this.frigo,
     this.menu,
   });
 
   final PreferencesController controller;
   final TypesBouteilleController types;
   final CaveController cave;
+  final CategoriesController categories;
+  final FrigoController frigo;
   final Widget? menu;
 
   @override
@@ -29,7 +36,7 @@ class PreferencesScreen extends StatelessWidget {
       sousTitre: 'Apparence et navigation',
       menu: menu,
       corps: ListenableBuilder(
-        listenable: Listenable.merge([controller, types]),
+        listenable: Listenable.merge([controller, types, categories]),
         builder: (context, _) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
           children: [
@@ -72,6 +79,31 @@ class PreferencesScreen extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) =>
                           TypesBouteilleScreen(types: types, cave: cave),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const TitreSection('Frigo'),
+            CarteGroupe(
+              enfants: [
+                ListTile(
+                  key: const Key('pref-categories'),
+                  leading: const IconeCarree(Icons.label_outline),
+                  title: const Text('Catégories d\'aliments'),
+                  subtitle: Text(
+                    categories.elements.map((c) => c.nom).join(', '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => CategoriesScreen(
+                        categories: categories,
+                        frigo: frigo,
+                      ),
                     ),
                   ),
                 ),

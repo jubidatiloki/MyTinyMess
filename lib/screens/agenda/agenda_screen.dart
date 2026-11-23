@@ -4,19 +4,29 @@ import 'package:uuid/uuid.dart';
 import '../../models/agenda.dart';
 import '../../models/recette.dart';
 import '../../state/cuisine.dart';
+import '../../state/preferences_controller.dart';
 import '../../theme.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/page.dart';
 import '../repas/actions_repas.dart';
 import '../repas/recette_detail_screen.dart';
 import '../repas/recettes_screen.dart';
+import 'calendrier.dart';
 
 /// Rubrique « Agenda » : une semaine, avec pour chaque jour les événements
 /// et les repas du midi et du soir.
 class AgendaScreen extends StatefulWidget {
-  const AgendaScreen({super.key, required this.cuisine, this.menu});
+  const AgendaScreen({
+    super.key,
+    required this.cuisine,
+    required this.preferences,
+    this.menu,
+  });
 
   final Cuisine cuisine;
+
+  /// Mémorise la vue choisie (semaine ou calendrier).
+  final PreferencesController preferences;
   final Widget? menu;
 
   @override
@@ -24,7 +34,26 @@ class AgendaScreen extends StatefulWidget {
 }
 
 class _AgendaScreenState extends State<AgendaScreen> {
-  late DateTime _lundi = debutSemaine(DateTime.now());
+  /// Jour choisi : il fixe la semaine ou le mois affiché.
+  late DateTime _jour = jourDe(DateTime.now());
+
+  DateTime get _lundi => debutSemaine(_jour);
+  bool get _calendrier => widget.preferences.agendaCalendrier;
+
+  /// Semaine ou mois précédent (-1) / suivant (1).
+  void _avancer(int sens) => setState(() {
+    if (!_calendrier) {
+      _jour = plusJours(_jour, 7 * sens);
+      return;
+    }
+    // Le 31 devient le dernier jour d'un mois plus court.
+    final dernier = DateTime(_jour.year, _jour.month + sens + 1, 0).day;
+    _jour = DateTime(
+      _jour.year,
+      _jour.month + sens,
+      _jour.day > dernier ? dernier : _jour.day,
+    );
+  });
 
   Cuisine get _c => widget.cuisine;
 
@@ -91,10 +120,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dimanche = _lundi.add(const Duration(days: 6));
+    return ListenableBuilder(
+      listenable: Listenable.merge([widget.preferences, _c.tout]),
+      builder: (context, _) => _page(context),
+    );
+  }
+
+  Widget _page(BuildContext context) {
+    final dimanche = plusJours(_lundi, 6);
     return PageOdv(
       titre: 'Agenda',
-      sousTitre: 'Du ${jourCourt(_lundi)} au ${jourCourt(dimanche)}',
+      sousTitre: _calendrier
+          ? jourEnLettres(_jour)
+          : 'Du ${jourCourt(_lundi)} au ${jourCourt(dimanche)}',
       menu: widget.menu,
       actions: [
         IconButton(
@@ -106,56 +144,84 @@ class _AgendaScreenState extends State<AgendaScreen> {
       bouton: BoutonAjout(
         libelle: 'Ajouter un événement',
         onPressed: () {
-          // Aujourd'hui si on regarde la semaine en cours, sinon le lundi.
+          // Calendrier : le jour choisi. Semaine : aujourd'hui si on regarde
+          // la semaine en cours, sinon le lundi.
           final aujourdhui = jourDe(DateTime.now());
           final cetteSemaine = debutSemaine(aujourdhui) == _lundi;
           editerEvenement(
             context,
             _c,
-            jour: cetteSemaine ? aujourdhui : _lundi,
+            jour: _calendrier
+                ? _jour
+                : cetteSemaine
+                ? aujourdhui
+                : _lundi,
           );
         },
       ),
-      corps: ListenableBuilder(
-        listenable: _c.tout,
-        builder: (context, _) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Semaine précédente',
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => setState(
-                    () => _lundi = _lundi.subtract(const Duration(days: 7)),
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: TextButton(
-                      onPressed: () =>
-                          setState(() => _lundi = debutSemaine(DateTime.now())),
-                      child: const Text('Cette semaine'),
+      corps: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        children: [
+          SegmentedButton<bool>(
+            key: const Key('vue-agenda'),
+            segments: const [
+              ButtonSegment(
+                value: false,
+                icon: Icon(Icons.view_agenda_outlined),
+                label: Text('Semaine'),
+              ),
+              ButtonSegment(
+                value: true,
+                icon: Icon(Icons.calendar_month_outlined),
+                label: Text('Calendrier'),
+              ),
+            ],
+            selected: {_calendrier},
+            onSelectionChanged: (s) =>
+                widget.preferences.changerAgendaCalendrier(s.first),
+          ),
+          Row(
+            children: [
+              IconButton(
+                tooltip: _calendrier ? 'Mois précédent' : 'Semaine précédente',
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () => _avancer(-1),
+              ),
+              Expanded(
+                child: Center(
+                  child: TextButton(
+                    onPressed: () =>
+                        setState(() => _jour = jourDe(DateTime.now())),
+                    child: Text(
+                      _calendrier ? moisEnLettres(_jour) : 'Cette semaine',
                     ),
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Semaine suivante',
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => setState(
-                    () => _lundi = _lundi.add(const Duration(days: 7)),
-                  ),
-                ),
-              ],
+              ),
+              IconButton(
+                tooltip: _calendrier ? 'Mois suivant' : 'Semaine suivante',
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () => _avancer(1),
+              ),
+            ],
+          ),
+          if (_calendrier) ...[
+            Calendrier(
+              cuisine: _c,
+              mois: _jour,
+              choisi: _jour,
+              onChoisir: (j) => setState(() => _jour = j),
             ),
+            const SizedBox(height: 12),
+            _Jour(cuisine: _c, jour: _jour, onChoisirRepas: _choisirRepas),
+          ] else
             for (var i = 0; i < 7; i++)
               _Jour(
                 cuisine: _c,
-                jour: _lundi.add(Duration(days: i)),
+                jour: plusJours(_lundi, i),
                 onChoisirRepas: _choisirRepas,
               ),
-          ],
-        ),
+        ],
       ),
     );
   }

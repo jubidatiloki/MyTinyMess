@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/recherche_isbn.dart';
 import '../models/section.dart';
 import '../state/bibliotheque_controller.dart';
+import '../state/categories_controller.dart';
 import '../state/cave_controller.dart';
 import '../state/cuisine.dart';
 import '../state/frigo_controller.dart';
@@ -29,6 +30,7 @@ class RacineScreen extends StatefulWidget {
     required this.bibliotheque,
     required this.cave,
     required this.types,
+    required this.categories,
     required this.frigo,
     required this.lieux,
     required this.preferences,
@@ -43,6 +45,7 @@ class RacineScreen extends StatefulWidget {
   final BibliothequeController bibliotheque;
   final CaveController cave;
   final TypesBouteilleController types;
+  final CategoriesController categories;
   final FrigoController frigo;
 
   /// Emplacements (livres, cave et frigo).
@@ -69,6 +72,7 @@ class _RacineScreenState extends State<RacineScreen> {
 
   Widget _ecran(Widget? menu) => switch (_section) {
     Section.accueil => TableauDeBordScreen(
+      preferences: widget.preferences,
       cuisine: widget.cuisine,
       bibliotheque: widget.bibliotheque,
       cave: widget.cave,
@@ -101,7 +105,11 @@ class _RacineScreenState extends State<RacineScreen> {
     ),
     Section.recettes => RecettesScreen(cuisine: widget.cuisine, menu: menu),
     Section.courses => CoursesScreen(cuisine: widget.cuisine, menu: menu),
-    Section.agenda => AgendaScreen(cuisine: widget.cuisine, menu: menu),
+    Section.agenda => AgendaScreen(
+      cuisine: widget.cuisine,
+      preferences: widget.preferences,
+      menu: menu,
+    ),
     Section.emplacements => LieuxScreen(
       lieux: widget.lieux,
       bibliotheque: widget.bibliotheque,
@@ -118,6 +126,8 @@ class _RacineScreenState extends State<RacineScreen> {
       controller: widget.preferences,
       types: widget.types,
       cave: widget.cave,
+      categories: widget.categories,
+      frigo: widget.frigo,
       menu: menu,
     ),
     Section.aPropos => AProposScreen(menu: menu),

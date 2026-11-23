@@ -73,7 +73,7 @@ class RepasController extends CollectionController<RepasPrevu> {
   /// Repas prévus du jour [debut] (inclus) à [debut] + [jours] (exclu).
   List<RepasPrevu> entre(DateTime debut, int jours) {
     final d = jourDe(debut);
-    final f = d.add(Duration(days: jours));
+    final f = DateTime(d.year, d.month, d.day + jours);
     return elements
         .where((r) => !jourDe(r.date).isBefore(d) && jourDe(r.date).isBefore(f))
         .toList();
