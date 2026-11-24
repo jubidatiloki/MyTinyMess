@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/liens.dart';
+import '../../data/partage_adresse.dart';
 import '../../models/adresse.dart';
 import '../../state/annuaire_controller.dart';
 import '../../widgets/communs.dart';
@@ -28,11 +29,13 @@ class AnnuaireScreen extends StatefulWidget {
     super.key,
     required this.annuaire,
     required this.ouvrirLien,
+    required this.partager,
     this.menu,
   });
 
   final AnnuaireController annuaire;
   final OuvrirLien ouvrirLien;
+  final Partager partager;
   final Widget? menu;
 
   @override
@@ -62,6 +65,7 @@ class _AnnuaireScreenState extends State<AnnuaireScreen> {
         annuaire: widget.annuaire,
         id: a.id,
         ouvrirLien: widget.ouvrirLien,
+        partager: widget.partager,
       ),
     ),
   );

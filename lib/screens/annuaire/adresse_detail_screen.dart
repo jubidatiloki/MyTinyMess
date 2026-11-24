@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../data/liens.dart';
+import '../../data/partage_adresse.dart';
 import '../../models/adresse.dart';
 import '../../state/annuaire_controller.dart';
 import '../../widgets/communs.dart';
@@ -17,11 +18,13 @@ class AdresseDetailScreen extends StatelessWidget {
     required this.annuaire,
     required this.id,
     required this.ouvrirLien,
+    required this.partager,
   });
 
   final AnnuaireController annuaire;
   final String id;
   final OuvrirLien ouvrirLien;
+  final Partager partager;
 
   Future<void> _ouvrir(BuildContext context, Uri lien) async {
     if (!await ouvrirLien(lien) && context.mounted) {
@@ -32,10 +35,17 @@ class AdresseDetailScreen extends StatelessWidget {
     }
   }
 
+  /// Menu de partage de l'appareil ; sinon la fiche est copiée.
+  Future<void> _partager(BuildContext context, Adresse a) async {
+    if (!await partager(textePartage(a), a.nom) && context.mounted) {
+      await _copier(context, a);
+    }
+  }
+
   Future<void> _copier(BuildContext context, Adresse a) async {
     var copie = true;
     try {
-      await Clipboard.setData(ClipboardData(text: a.enTexte));
+      await Clipboard.setData(ClipboardData(text: textePartage(a)));
     } catch (_) {
       copie = false;
     }
@@ -175,6 +185,13 @@ class AdresseDetailScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 20),
+            FilledButton.icon(
+              key: const Key('partager-fiche'),
+              icon: const Icon(Icons.share_outlined),
+              label: const Text('Partager'),
+              onPressed: () => _partager(context, a),
+            ),
+            const SizedBox(height: 8),
             OutlinedButton.icon(
               key: const Key('copier-fiche'),
               icon: const Icon(Icons.copy_outlined),

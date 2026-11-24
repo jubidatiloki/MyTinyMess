@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/depot.dart';
 import 'data/liens.dart';
+import 'data/partage_adresse.dart';
 import 'data/recherche_isbn.dart';
 import 'data/recherche_recettes.dart';
 import 'models/recette.dart';
+import 'screens/annuaire/reception_adresse.dart';
 import 'screens/bibliotheque/scanner_isbn_screen.dart';
 import 'screens/racine_screen.dart';
 import 'state/agenda_controller.dart';
@@ -31,6 +35,8 @@ class MyTinyMessApp extends StatefulWidget {
     this.rechercheRecettes,
     this.chargerRecettesIntegrees,
     this.ouvrirLien = ouvrirLienExterne,
+    this.partager = partagerNatif,
+    this.liensRecus,
   });
 
   final Depot depot;
@@ -53,6 +59,13 @@ class MyTinyMessApp extends StatefulWidget {
   /// Ouverture des liens de l'annuaire (téléphone, e-mail, site, carte).
   final OuvrirLien ouvrirLien;
 
+  /// Menu de partage de l'appareil.
+  final Partager partager;
+
+  /// Liens touchés hors de l'application (celui qui l'a ouverte, puis les
+  /// suivants).
+  final Stream<Uri>? liensRecus;
+
   @override
   State<MyTinyMessApp> createState() => _MyTinyMessAppState();
 }
@@ -72,6 +85,12 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final Cuisine _cuisine;
   late final PreferencesController _preferences;
   final _rechercheIsbn = RechercheIsbnEnLigne();
+  final _navigateur = GlobalKey<NavigatorState>();
+  late final Future<void> _annuairePret;
+  StreamSubscription<Uri>? _ecouteLiens;
+
+  /// Liens traités l'un après l'autre.
+  Future<void> _reception = Future.value();
 
   @override
   void initState() {
@@ -96,7 +115,8 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
     _courses = CoursesController(depot)..charger();
     _repas = RepasController(depot)..charger();
     _evenements = EvenementsController(depot)..charger();
-    _annuaire = AnnuaireController(depot)..charger();
+    _annuaire = AnnuaireController(depot);
+    _annuairePret = _annuaire.charger();
     _cuisine = Cuisine(
       recettes: _recettes,
       frigo: _frigo,
@@ -112,10 +132,34 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
     ]).then((_) => _cave.migrerZones());
     _preferences =
         widget.preferences ?? (PreferencesController(depot)..charger());
+    _ecouteLiens = widget.liensRecus?.listen(
+      (lien) => _reception = _reception.then((_) => _recevoir(lien)),
+      onError: (_) {},
+    );
+  }
+
+  Future<void> _recevoir(Uri lien) async {
+    // Annuaire lu et premier écran affiché (lien qui ouvre l'application).
+    await _annuairePret;
+    if (_navigateur.currentState == null) {
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    final navigateur = _navigateur.currentState;
+    if (!mounted || navigateur == null) {
+      return;
+    }
+    await recevoirAdresse(
+      navigateur,
+      lien: lien,
+      annuaire: _annuaire,
+      ouvrirLien: widget.ouvrirLien,
+      partager: widget.partager,
+    );
   }
 
   @override
   void dispose() {
+    _ecouteLiens?.cancel();
     for (final c in [
       _lieux,
       _bibliotheque,
@@ -142,6 +186,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
     return ListenableBuilder(
       listenable: _preferences,
       builder: (context, _) => MaterialApp(
+        navigatorKey: _navigateur,
         title: 'My Tiny Mess',
         debugShowCheckedModeBanner: false,
         theme: construireTheme(Brightness.light),
@@ -161,6 +206,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
           cuisine: _cuisine,
           annuaire: _annuaire,
           ouvrirLien: widget.ouvrirLien,
+          partager: widget.partager,
           rechercheIsbn: widget.rechercheIsbn ?? _rechercheIsbn,
           scannerIsbn:
               widget.scannerIsbn ??

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "fr.mytinymess.my_tiny_mess",
+      "sha256_cert_fingerprints": [
+        "C1:B0:46:3C:F6:80:70:F9:13:11:A8:95:AB:BA:09:D3:6A:64:7F:63:F4:90:A3:C4:0E:48:A7:F9:DF:54:48:BC"
+      ]
+    }
+  }
+]

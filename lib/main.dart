@@ -1,3 +1,5 @@
+import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,5 +55,14 @@ Future<void> main() async {
   // thème et sur le bon écran.
   final preferences = PreferencesController(depot);
   await preferences.charger();
-  runApp(MyTinyMessApp(depot: depot, preferences: preferences));
+  runApp(
+    MyTinyMessApp(
+      depot: depot,
+      preferences: preferences,
+      // Adresses partagées : les liens n'ouvrent que l'application Android.
+      liensRecus: !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+          ? AppLinks().uriLinkStream
+          : null,
+    ),
+  );
 }

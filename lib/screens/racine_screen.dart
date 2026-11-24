@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/liens.dart';
+import '../data/partage_adresse.dart';
 import '../data/recherche_isbn.dart';
 import '../models/section.dart';
 import '../state/annuaire_controller.dart';
@@ -40,6 +41,7 @@ class RacineScreen extends StatefulWidget {
     required this.cuisine,
     required this.annuaire,
     required this.ouvrirLien,
+    required this.partager,
     this.rechercheIsbn,
     this.scannerIsbn,
   });
@@ -63,6 +65,7 @@ class RacineScreen extends StatefulWidget {
   /// Bonnes adresses, et ouverture de leurs liens.
   final AnnuaireController annuaire;
   final OuvrirLien ouvrirLien;
+  final Partager partager;
 
   /// Recherche des livres par ISBN et scanner de code-barres.
   final RechercheIsbn? rechercheIsbn;
@@ -123,6 +126,7 @@ class _RacineScreenState extends State<RacineScreen> {
     Section.annuaire => AnnuaireScreen(
       annuaire: widget.annuaire,
       ouvrirLien: widget.ouvrirLien,
+      partager: widget.partager,
       menu: menu,
     ),
     Section.emplacements => LieuxScreen(

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_tiny_mess/app.dart';
 import 'package:my_tiny_mess/data/depot.dart';
+import 'package:my_tiny_mess/data/partage_adresse.dart';
 import 'package:my_tiny_mess/main.dart';
 import 'package:my_tiny_mess/models/adresse.dart';
 import 'package:my_tiny_mess/state/annuaire_controller.dart';
@@ -170,7 +171,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('copier-fiche')));
     await tester.pumpAndSettle();
-    expect(copie, _boulanger.enTexte);
+    expect(copie, textePartage(_boulanger));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 

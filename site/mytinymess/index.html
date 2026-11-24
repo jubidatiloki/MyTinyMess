@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta property="og:title" content="Une bonne adresse · My Tiny Mess">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Une bonne adresse · My Tiny Mess</title>
+<link rel="icon" href="favicon.png">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #262827; color: #eef1ef; font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+  .marque { color: #7cc792; font-weight: 600; margin: 0 0 16px; }
+  .carte { background: #303331; border-radius: 16px; padding: 20px; }
+  h1 { font-size: 1.5rem; line-height: 1.25; margin: 0 0 4px; overflow-wrap: anywhere; }
+  .type { color: #b5beb8; margin: 0; overflow-wrap: anywhere; }
+  dl { margin: 0; }
+  dt { color: #b5beb8; font-size: .85rem; margin-top: 12px; }
+  dd { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+  a { color: #7cc792; }
+  .bouton { display: block; text-align: center; background: #34764a; color: #fff; font-weight: 600;
+    text-decoration: none; border-radius: 14px; padding: 15px; margin: 20px 0 12px; }
+  .note { color: #b5beb8; font-size: .9rem; }
+</style>
+</head>
+<body>
+<!-- L'adresse est dans la partie du lien après « # » : elle n'est jamais
+     envoyée à un serveur, seule cette page la lit. Même format que
+     lib/data/partage_adresse.dart. -->
+<main>
+  <p class="marque">My Tiny Mess</p>
+  <div class="carte" id="carte"></div>
+  <div id="actions" hidden>
+    <a class="bouton" id="ouvrir">Ajouter dans My Tiny Mess</a>
+    <p class="note">Pas encore l'application (Android) ? <a href="https://github.com/jubidatiloki/MyTinyMess/releases/latest">La télécharger</a>, puis retoucher le lien reçu.</p>
+  </div>
+</main>
+<script>
+const TYPES = { personne: 'Personne', commerce: 'Commerçant', restaurant: 'Restaurant, bar',
+  artisan: 'Artisan, service', sante: 'Santé, bien-être', site: 'Site internet',
+  festival: 'Festival, événement', sortie: 'Lieu, sortie', autre: 'Autre' };
+const carte = document.getElementById('carte');
+function ajouter(parent, balise, texte, classe) {
+  const e = document.createElement(balise);
+  e.textContent = texte;
+  if (classe) e.className = classe;
+  parent.append(e);
+  return e;
+}
+function lire() {
+  const m = /^1\.([A-Za-z0-9_-]{1,20000})\.z$/.exec(location.hash.slice(1));
+  if (!m) return null;
+  try {
+    const bin = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
+    const a = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+    return a && typeof a.nom === 'string' && a.nom.trim() ? a : null;
+  } catch (_) { return null; }
+}
+function afficher() {
+  const a = lire();
+  carte.textContent = '';
+  document.getElementById('actions').hidden = !a;
+  if (!a) {
+    ajouter(carte, 'h1', 'Lien incomplet');
+    ajouter(carte, 'p', 'Ce lien ne contient pas d\'adresse. Demandez qu\'on vous l\'envoie de nouveau.', 'type');
+    return;
+  }
+  const t = v => typeof v === 'string' ? v.trim() : '';
+  ajouter(carte, 'h1', t(a.nom));
+  ajouter(carte, 'p', [Object.hasOwn(TYPES, a.type) ? TYPES[a.type] : 'Autre', t(a.description)].filter(Boolean).join(' · '), 'type');
+  const dl = ajouter(carte, 'dl', '');
+  const ligne = (libelle, texte, lien) => {
+    if (!texte) return;
+    ajouter(dl, 'dt', libelle);
+    const dd = ajouter(dl, 'dd', lien ? '' : texte);
+    if (lien) { const l = ajouter(dd, 'a', texte); l.href = lien; l.rel = 'noopener noreferrer'; }
+  };
+  ligne('Adresse', t(a.lieu));
+  ligne('Horaires ou dates', t(a.quand));
+  const tel = t(a.telephone).replace(/[^0-9+*#]/g, '');
+  ligne('Téléphone', t(a.telephone), tel && 'tel:' + tel.replace(/#/g, '%23'));
+  ligne('E-mail', t(a.email), /^\S+@\S+$/.test(t(a.email)) && 'mailto:' + encodeURIComponent(t(a.email)));
+  const site = t(a.site);
+  const url = site.includes('://') ? site : 'https://' + site;
+  ligne('Site', site, /^https?:\/\/[^\s@]+$/i.test(url) && url);
+  ligne('Avis', t(a.avis));
+  const code = location.hash.slice(1);
+  const telecharger = 'https://github.com/jubidatiloki/MyTinyMess/releases/latest';
+  document.getElementById('ouvrir').href = /Android/i.test(navigator.userAgent)
+    ? 'intent://adresse/' + code + '#Intent;scheme=mytinymess;package=fr.mytinymess.my_tiny_mess;'
+      + 'S.browser_fallback_url=' + encodeURIComponent(telecharger) + ';end'
+    : 'mytinymess://adresse/' + code;
+}
+addEventListener('hashchange', afficher);
+afficher();
+</script>
+</body>
+</html>
