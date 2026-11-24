@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/agenda.dart';
 import '../models/lieu.dart';
 import '../models/section.dart';
+import '../state/annuaire_controller.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/cave_controller.dart';
 import '../state/cuisine.dart';
@@ -24,6 +25,7 @@ class TableauDeBordScreen extends StatelessWidget {
     required this.cave,
     required this.frigo,
     required this.cuisine,
+    required this.annuaire,
     required this.preferences,
     required this.lieux,
     required this.onOuvrir,
@@ -36,6 +38,7 @@ class TableauDeBordScreen extends StatelessWidget {
 
   /// Agenda, repas et courses (carte « Aujourd'hui »).
   final Cuisine cuisine;
+  final AnnuaireController annuaire;
   final LieuxController lieux;
 
   /// Mémorise les groupes d'emplacements repliés.
@@ -53,6 +56,7 @@ class TableauDeBordScreen extends StatelessWidget {
         listenable: Listenable.merge([
           bibliotheque,
           cave,
+          annuaire,
           lieux,
           preferences,
           cuisine.tout,
@@ -296,6 +300,7 @@ class TableauDeBordScreen extends StatelessWidget {
     final livres = bibliotheque.nombreLivres;
     final bouteilles = cave.totalBouteilles;
     final aliments = frigo.nombreArticles;
+    final adresses = annuaire.elements.length;
     return Wrap(
       spacing: 16,
       runSpacing: 16,
@@ -326,6 +331,15 @@ class TableauDeBordScreen extends StatelessWidget {
           icone: Icons.kitchen,
           couleurs: const [Color(0xFF2F6F7E), Color(0xFF143238)],
           onTap: () => onOuvrir(Section.frigo),
+        ),
+        TuileCompteur(
+          key: const Key('tuile-adresses'),
+          nombre: adresses,
+          libelle: adresses > 1 ? 'adresses' : 'adresse',
+          image: 'assets/images/annuaire.jpg',
+          icone: Icons.contacts,
+          couleurs: const [Color(0xFF4B4A86), Color(0xFF1D1C38)],
+          onTap: () => onOuvrir(Section.annuaire),
         ),
       ],
     );

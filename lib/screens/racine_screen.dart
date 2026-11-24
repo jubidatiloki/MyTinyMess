@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../data/liens.dart';
 import '../data/recherche_isbn.dart';
 import '../models/section.dart';
+import '../state/annuaire_controller.dart';
 import '../state/bibliotheque_controller.dart';
 import '../state/categories_controller.dart';
 import '../state/cave_controller.dart';
@@ -12,6 +14,7 @@ import '../state/preferences_controller.dart';
 import '../state/types_bouteille_controller.dart';
 import '../widgets/menu_lateral.dart';
 import 'agenda/agenda_screen.dart';
+import 'annuaire/annuaire_screen.dart';
 import 'bibliotheque/liste_livres_screen.dart';
 import 'bibliotheque/scanner_isbn_screen.dart';
 import 'cave/liste_bouteilles_screen.dart';
@@ -35,6 +38,8 @@ class RacineScreen extends StatefulWidget {
     required this.lieux,
     required this.preferences,
     required this.cuisine,
+    required this.annuaire,
+    required this.ouvrirLien,
     this.rechercheIsbn,
     this.scannerIsbn,
   });
@@ -55,6 +60,10 @@ class RacineScreen extends StatefulWidget {
   /// Recettes, frigo, courses et agenda (rubriques Repas, Courses, Agenda).
   final Cuisine cuisine;
 
+  /// Bonnes adresses, et ouverture de leurs liens.
+  final AnnuaireController annuaire;
+  final OuvrirLien ouvrirLien;
+
   /// Recherche des livres par ISBN et scanner de code-barres.
   final RechercheIsbn? rechercheIsbn;
   final ScannerIsbn? scannerIsbn;
@@ -74,6 +83,7 @@ class _RacineScreenState extends State<RacineScreen> {
     Section.accueil => TableauDeBordScreen(
       preferences: widget.preferences,
       cuisine: widget.cuisine,
+      annuaire: widget.annuaire,
       bibliotheque: widget.bibliotheque,
       cave: widget.cave,
       frigo: widget.frigo,
@@ -108,6 +118,11 @@ class _RacineScreenState extends State<RacineScreen> {
     Section.agenda => AgendaScreen(
       cuisine: widget.cuisine,
       preferences: widget.preferences,
+      menu: menu,
+    ),
+    Section.annuaire => AnnuaireScreen(
+      annuaire: widget.annuaire,
+      ouvrirLien: widget.ouvrirLien,
       menu: menu,
     ),
     Section.emplacements => LieuxScreen(

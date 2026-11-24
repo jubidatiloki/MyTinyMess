@@ -7,6 +7,7 @@ import 'data/depot.dart';
 import 'data/depot_base.dart';
 import 'data/fusion_lieux.dart';
 import 'state/agenda_controller.dart';
+import 'state/annuaire_controller.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/categories_controller.dart';
 import 'state/cave_controller.dart';
@@ -27,6 +28,7 @@ const clesDonnees = [
   CoursesController.cle,
   RepasController.cle,
   EvenementsController.cle,
+  AnnuaireController.cle,
   LieuxController.cle,
   // Anciennes clés (versions 0.3 à 0.5), fusionnées ensuite dans « lieux ».
   LieuxController.ancienneCleLivres,

@@ -123,7 +123,7 @@ void main() {
     expect(find.text('aliment'), findsOneWidget);
     // Logo de l'application (l'étagère) en haut du menu.
     expect(find.byType(IconeApp), findsOneWidget);
-    expect(find.text('0'), findsNWidgets(3));
+    expect(find.text('0'), findsNWidgets(4));
   });
 
   testWidgets('vue d\'ensemble : compteurs et accès par les tuiles', (

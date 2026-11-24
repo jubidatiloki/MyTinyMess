@@ -13,6 +13,7 @@ IconData iconeSection(Section s) => switch (s) {
   Section.recettes => Icons.restaurant_menu,
   Section.courses => Icons.shopping_cart_outlined,
   Section.agenda => Icons.calendar_month_outlined,
+  Section.annuaire => Icons.contacts_outlined,
   Section.emplacements => Icons.shelves,
   Section.bazar => Icons.inventory_2_outlined,
   Section.preferences => Icons.settings_outlined,

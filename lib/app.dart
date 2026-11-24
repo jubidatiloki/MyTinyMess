@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/depot.dart';
+import 'data/liens.dart';
 import 'data/recherche_isbn.dart';
 import 'data/recherche_recettes.dart';
 import 'models/recette.dart';
 import 'screens/bibliotheque/scanner_isbn_screen.dart';
 import 'screens/racine_screen.dart';
 import 'state/agenda_controller.dart';
+import 'state/annuaire_controller.dart';
 import 'state/bibliotheque_controller.dart';
 import 'state/categories_controller.dart';
 import 'state/cave_controller.dart';
@@ -28,6 +30,7 @@ class MyTinyMessApp extends StatefulWidget {
     this.scannerIsbn,
     this.rechercheRecettes,
     this.chargerRecettesIntegrees,
+    this.ouvrirLien = ouvrirLienExterne,
   });
 
   final Depot depot;
@@ -47,6 +50,9 @@ class MyTinyMessApp extends StatefulWidget {
   /// Lecture du carnet intégré (par défaut : fichier de l'appli).
   final Future<List<Recette>> Function()? chargerRecettesIntegrees;
 
+  /// Ouverture des liens de l'annuaire (téléphone, e-mail, site, carte).
+  final OuvrirLien ouvrirLien;
+
   @override
   State<MyTinyMessApp> createState() => _MyTinyMessAppState();
 }
@@ -62,6 +68,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
   late final CoursesController _courses;
   late final RepasController _repas;
   late final EvenementsController _evenements;
+  late final AnnuaireController _annuaire;
   late final Cuisine _cuisine;
   late final PreferencesController _preferences;
   final _rechercheIsbn = RechercheIsbnEnLigne();
@@ -89,6 +96,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
     _courses = CoursesController(depot)..charger();
     _repas = RepasController(depot)..charger();
     _evenements = EvenementsController(depot)..charger();
+    _annuaire = AnnuaireController(depot)..charger();
     _cuisine = Cuisine(
       recettes: _recettes,
       frigo: _frigo,
@@ -119,6 +127,7 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
       _courses,
       _repas,
       _evenements,
+      _annuaire,
     ]) {
       c.dispose();
     }
@@ -150,6 +159,8 @@ class _MyTinyMessAppState extends State<MyTinyMessApp> {
           frigo: _frigo,
           preferences: _preferences,
           cuisine: _cuisine,
+          annuaire: _annuaire,
+          ouvrirLien: widget.ouvrirLien,
           rechercheIsbn: widget.rechercheIsbn ?? _rechercheIsbn,
           scannerIsbn:
               widget.scannerIsbn ??
