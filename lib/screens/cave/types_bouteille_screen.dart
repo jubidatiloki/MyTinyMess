@@ -68,25 +68,22 @@ class TypesBouteilleScreen extends StatelessWidget {
               CarteLigne(
                 key: Key('type-${t.id}'),
                 leading: _Pastille(couleur: t.color),
-                title: Text(t.nom, overflow: TextOverflow.ellipsis),
+                title: Text(t.nom),
                 subtitle: Text(_resume(cave.nombreDeType(t.id))),
                 onTap: () => editerTypeBouteille(context, types, type: t),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'Modifier',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () =>
-                          editerTypeBouteille(context, types, type: t),
-                    ),
-                    IconButton(
-                      tooltip: 'Supprimer',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _supprimer(context, t),
-                    ),
-                  ],
-                ),
+                actions: [
+                  IconButton(
+                    tooltip: 'Modifier',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () =>
+                        editerTypeBouteille(context, types, type: t),
+                  ),
+                  IconButton(
+                    tooltip: 'Supprimer',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _supprimer(context, t),
+                  ),
+                ],
               ),
           ],
         ),

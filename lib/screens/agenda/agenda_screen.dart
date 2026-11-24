@@ -392,7 +392,7 @@ class _ChoixRepasScreenState extends State<_ChoixRepasScreen> {
     final carnet = c.recettes.rechercher(texte: _texte);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.titre, overflow: TextOverflow.ellipsis),
+        title: TitreLong(widget.titre),
         actions: [
           if (widget.dejaPrevu)
             IconButton(
@@ -431,11 +431,7 @@ class _ChoixRepasScreenState extends State<_ChoixRepasScreen> {
               CarteLigne(
                 leading: const IconeCarree(Icons.restaurant_menu),
                 title: Text(s.recette.nom),
-                subtitle: Text(
-                  resumeSuggestion(s),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                subtitle: Text(resumeSuggestion(s)),
                 onTap: () =>
                     Navigator.pop(context, _ChoixRepas(recette: s.recette)),
               ),

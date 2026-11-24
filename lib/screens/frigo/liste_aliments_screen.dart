@@ -281,7 +281,7 @@ class _LigneAliment extends StatelessWidget {
       opacity: a.enStock ? 1 : 0.5,
       child: CarteLigne(
         leading: IconeCarree(Icons.kitchen_outlined, couleur: alerte),
-        title: Text(titre, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(titre),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -290,8 +290,6 @@ class _LigneAliment extends StatelessWidget {
                 a.enStock ? (peremption ?? 'Pas de date') : 'Épuisé',
                 ?a.categorie,
               ].join(' · '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: alerte ?? p.texteSecondaire,
                 fontWeight: alerte != null ? FontWeight.w600 : null,
@@ -302,55 +300,45 @@ class _LigneAliment extends StatelessWidget {
                 children: [
                   const Icon(Icons.place_outlined, size: 14),
                   const SizedBox(width: 2),
-                  Flexible(
-                    child: Text(
-                      emplacement!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  Flexible(child: Text(emplacement!)),
                 ],
               ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onCourses != null)
-              IconButton(
-                tooltip: dansLesCourses
-                    ? 'Déjà dans la liste de courses'
-                    : 'Ajouter à la liste de courses',
-                icon: Icon(
-                  dansLesCourses
-                      ? Icons.shopping_cart
-                      : Icons.add_shopping_cart,
-                  color: dansLesCourses ? vertOdv : null,
-                ),
-                onPressed: dansLesCourses ? null : onCourses,
-              ),
+        actions: [
+          if (onCourses != null)
             IconButton(
-              tooltip: 'Retirer 1 du stock',
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: a.enStock ? onRetirer : null,
+              tooltip: dansLesCourses
+                  ? 'Déjà dans la liste de courses'
+                  : 'Ajouter à la liste de courses',
+              icon: Icon(
+                dansLesCourses ? Icons.shopping_cart : Icons.add_shopping_cart,
+                color: dansLesCourses ? vertOdv : null,
+              ),
+              onPressed: dansLesCourses ? null : onCourses,
             ),
-            SizedBox(
-              width: 28,
-              child: FittedBox(
-                child: Text(
-                  '${a.quantite}',
-                  key: Key('quantite-${a.id}'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+          IconButton(
+            tooltip: 'Retirer 1 du stock',
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: a.enStock ? onRetirer : null,
+          ),
+          SizedBox(
+            width: 28,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${a.quantite}',
+                key: Key('quantite-${a.id}'),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            IconButton(
-              tooltip: 'Ajouter 1 au stock',
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onAjouter,
-            ),
-          ],
-        ),
+          ),
+          IconButton(
+            tooltip: 'Ajouter 1 au stock',
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: onAjouter,
+          ),
+        ],
         onTap: onTap,
       ),
     );

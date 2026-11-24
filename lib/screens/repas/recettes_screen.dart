@@ -159,15 +159,9 @@ class _PropositionsState extends State<_Propositions> {
                               backgroundColor: p.champ,
                             ),
                           ),
-                          title: Text(
-                            s.recette.nom,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          title: Text(s.recette.nom),
                           subtitle: Text(
                             resumeSuggestion(s),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: s.complete ? p.accentDoux : null,
                             ),
@@ -229,19 +223,13 @@ class _CarnetState extends State<_Carnet> {
                     leading: IconeCarree(
                       r.modifiable ? Icons.edit_note : Icons.menu_book_outlined,
                     ),
-                    title: Text(
-                      r.nom,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    title: Text(r.nom),
                     subtitle: Text(
                       [
                         if (r.modifiable) 'Ma recette',
                         ...r.styles.map((s) => s.libelle),
                         if (r.minutes != null) '${r.minutes} min',
                       ].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     onTap: () => ouvrirRecette(context, c, r),
                   );
@@ -348,11 +336,7 @@ class _EnLigneState extends State<_EnLigne> {
                   itemCount: r.length,
                   itemBuilder: (context, i) => CarteLigne(
                     leading: const IconeCarree(Icons.public),
-                    title: Text(
-                      r[i].nom,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    title: Text(r[i].nom),
                     subtitle: Text('${r[i].ingredients.length} ingrédients'),
                     onTap: () => ouvrirRecette(context, widget.cuisine, r[i]),
                   ),

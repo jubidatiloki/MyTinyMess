@@ -68,11 +68,7 @@ class PreferencesScreen extends StatelessWidget {
                   key: const Key('pref-types-bouteille'),
                   leading: const IconeCarree(Icons.category_outlined),
                   title: const Text('Types de bouteille'),
-                  subtitle: Text(
-                    types.elements.map((t) => t.nom).join(', '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  subtitle: Text(types.elements.map((t) => t.nom).join(', ')),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
@@ -93,8 +89,6 @@ class PreferencesScreen extends StatelessWidget {
                   title: const Text('Catégories d\'aliments'),
                   subtitle: Text(
                     categories.elements.map((c) => c.nom).join(', '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
@@ -270,7 +264,6 @@ class _VignetteTheme extends StatelessWidget {
                 Flexible(
                   child: Text(
                     choix.libelle,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: actif ? FontWeight.w600 : FontWeight.w400,
                       color: actif ? null : p.texteSecondaire,

@@ -208,38 +208,36 @@ class _LigneLivre extends StatelessWidget {
         StatutLecture.lu => Icons.check_circle_outline,
         StatutLecture.souhait => Icons.favorite_border,
       }),
-      title: Text(livre.titre, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(livre.titre),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(details, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(details),
           if (emplacement != null)
             Row(
               children: [
                 const Icon(Icons.place_outlined, size: 14),
                 const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    emplacement!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                Flexible(child: Text(emplacement!)),
               ],
             ),
         ],
       ),
-      trailing: livre.estChezMoi
+      actions: livre.estChezMoi
           ? null
-          : Chip(
-              label: Text(
-                livre.possession == Possession.prete
-                    ? 'Prêté à ${livre.personne ?? '?'}'
-                    : 'Emprunté à ${livre.personne ?? '?'}',
-                overflow: TextOverflow.ellipsis,
+          : [
+              Chip(
+                label: Text(
+                  livre.possession == Possession.prete
+                      ? 'Prêté à ${livre.personne ?? '?'}'
+                      : 'Emprunté à ${livre.personne ?? '?'}',
+                  // Une pastille coupe son texte par défaut.
+                  maxLines: 4,
+                  softWrap: true,
+                ),
+                visualDensity: VisualDensity.compact,
               ),
-              visualDensity: VisualDensity.compact,
-            ),
+            ],
     );
   }
 }

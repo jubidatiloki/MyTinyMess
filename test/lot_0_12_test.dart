@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_tiny_mess/app.dart';
 import 'package:my_tiny_mess/data/depot.dart';
@@ -125,6 +126,33 @@ void main() {
     expect(find.text('Brie'), findsNothing);
     await _toucher(tester, find.text('Colin'));
     expect(find.byKey(const Key('champ-categorie')), findsOneWidget);
+  });
+
+  testWidgets('téléphone : le nom d\'un aliment n\'est pas coupé', (
+    tester,
+  ) async {
+    final depot = DepotMemoire();
+    const nom = 'Roquette sauvage biologique du marché de la place';
+    await FrigoController(
+      depot,
+    ).enregistrer(const Aliment(id: 'a', nom: nom, quantite: 1));
+    await _lancer(tester, depot, taille: const Size(360, 780));
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    await _toucher(tester, find.byKey(const Key('menu-frigo')));
+    final texte = tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.text(nom), matching: find.byType(RichText)),
+    );
+    expect(texte.didExceedMaxLines, isFalse);
+    expect(texte.size.width, greaterThan(200));
+    // Les boutons sont sous le texte et fonctionnent.
+    final plus = find.byTooltip('Ajouter 1 au stock');
+    expect(
+      tester.getTopLeft(plus).dy,
+      greaterThan(tester.getBottomLeft(find.text(nom)).dy),
+    );
+    await _toucher(tester, plus);
+    expect((await depot.lire('aliments')).single['quantite'], 2);
   });
 
   testWidgets('vue d\'ensemble : regrouper et déplier les emplacements', (

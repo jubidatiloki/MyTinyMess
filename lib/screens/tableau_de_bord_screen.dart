@@ -376,8 +376,6 @@ class _LigneEmplacement extends StatelessWidget {
       ),
       title: Text(
         nom,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
         style: discret
             ? TextStyle(fontStyle: FontStyle.italic, color: p.texteSecondaire)
             : null,

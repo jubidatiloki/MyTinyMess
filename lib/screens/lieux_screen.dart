@@ -120,11 +120,7 @@ class LieuxScreen extends StatelessWidget {
                       ? iconeTypeLieu(type)
                       : Icons.subdirectory_arrow_right,
                 ),
-                title: Text(
-                  n.lieu.nom,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                title: Text(n.lieu.nom),
                 subtitle: Text(
                   resume ?? 'Vide',
                   style: resume == null
@@ -132,27 +128,24 @@ class LieuxScreen extends StatelessWidget {
                       : null,
                 ),
                 onTap: () => editerLieu(context, lieux, lieu: n.lieu),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'Modifier',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () => editerLieu(context, lieux, lieu: n.lieu),
-                    ),
-                    IconButton(
-                      tooltip: 'Ajouter dedans',
-                      icon: const Icon(Icons.add),
-                      onPressed: () =>
-                          editerLieu(context, lieux, parentId: n.lieu.id),
-                    ),
-                    IconButton(
-                      tooltip: 'Supprimer',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _supprimer(context, n.lieu),
-                    ),
-                  ],
-                ),
+                actions: [
+                  IconButton(
+                    tooltip: 'Modifier',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => editerLieu(context, lieux, lieu: n.lieu),
+                  ),
+                  IconButton(
+                    tooltip: 'Ajouter dedans',
+                    icon: const Icon(Icons.add),
+                    onPressed: () =>
+                        editerLieu(context, lieux, parentId: n.lieu.id),
+                  ),
+                  IconButton(
+                    tooltip: 'Supprimer',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _supprimer(context, n.lieu),
+                  ),
+                ],
               );
             },
           ),

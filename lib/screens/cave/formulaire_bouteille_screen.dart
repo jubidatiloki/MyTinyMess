@@ -184,9 +184,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
                       children: [
                         Icon(Icons.wine_bar, size: 18, color: t.color),
                         const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(t.nom, overflow: TextOverflow.ellipsis),
-                        ),
+                        Flexible(child: TexteAjuste(t.nom)),
                       ],
                     ),
                   ),

@@ -85,6 +85,44 @@ class PageOdv extends StatelessWidget {
   }
 }
 
+/// Texte sur une ligne, rétréci (et non coupé) s'il manque de place.
+class TexteAjuste extends StatelessWidget {
+  const TexteAjuste(this.texte, {super.key, this.style});
+
+  final String texte;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: AlignmentDirectional.centerStart,
+    child: Text(texte, style: style, maxLines: 1),
+  );
+}
+
+/// Titre de barre qui peut être long (nom de recette…) : il passe à la ligne,
+/// puis rétrécit si la barre est pleine.
+class TitreLong extends StatelessWidget {
+  const TitreLong(this.texte, {super.key});
+
+  final String texte;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 56,
+    child: LayoutBuilder(
+      builder: (context, c) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: c.maxWidth),
+          child: Text(texte, softWrap: true, overflow: TextOverflow.visible),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Titre de page sur une ou deux lignes.
 class TitrePage extends StatelessWidget {
   const TitrePage({super.key, required this.titre, this.sousTitre});
@@ -99,12 +137,10 @@ class TitrePage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(titre, maxLines: 1, overflow: TextOverflow.ellipsis),
+        TexteAjuste(titre),
         if (sousTitre != null)
-          Text(
+          TexteAjuste(
             sousTitre!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -185,6 +221,7 @@ class CarteLigne extends StatelessWidget {
     this.leading,
     this.subtitle,
     this.trailing,
+    this.actions,
     this.onTap,
   });
 
@@ -192,6 +229,10 @@ class CarteLigne extends StatelessWidget {
   final Widget? leading;
   final Widget? subtitle;
   final Widget? trailing;
+
+  /// Boutons de la ligne : à droite du texte, ou dessous sur un écran étroit
+  /// pour laisser toute la place au texte (jamais coupé).
+  final List<Widget>? actions;
   final VoidCallback? onTap;
 
   @override
@@ -199,13 +240,51 @@ class CarteLigne extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 8),
     child: Card(
       clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
-        leading: leading,
-        title: title,
-        subtitle: subtitle,
-        trailing: trailing,
-        onTap: onTap,
+      child: LayoutBuilder(
+        builder: (context, contraintes) {
+          final boutons = actions;
+          final dessous = boutons != null && contraintes.maxWidth < 480;
+          final ligne = ListTile(
+            contentPadding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
+            leading: leading,
+            title: title,
+            subtitle: subtitle,
+            trailing: boutons == null || dessous
+                ? trailing
+                : ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: contraintes.maxWidth / 2,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: boutons.length == 1
+                          ? [Flexible(child: boutons.single)]
+                          : boutons,
+                    ),
+                  ),
+            onTap: onTap,
+          );
+          if (!dessous) {
+            return ligne;
+          }
+          return InkWell(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ligne,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 10, 4),
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: boutons,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     ),
   );

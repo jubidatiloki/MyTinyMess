@@ -67,7 +67,6 @@ class MenuLateral extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'My Tiny Mess',
-                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -143,7 +142,6 @@ class _ItemMenu extends StatelessWidget {
                 Expanded(
                   child: Text(
                     section.libelle,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: couleur,
                       fontSize: 15,

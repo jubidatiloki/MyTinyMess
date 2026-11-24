@@ -223,7 +223,7 @@ class _LigneBouteille extends StatelessWidget {
       opacity: b.enStock ? 1 : 0.5,
       child: CarteLigne(
         leading: IconeCarree(Icons.wine_bar, couleur: couleur),
-        title: Text(titre, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(titre),
         subtitle: Row(
           children: [
             const Icon(Icons.place_outlined, size: 14),
@@ -231,37 +231,33 @@ class _LigneBouteille extends StatelessWidget {
             Flexible(
               child: Text(
                 emplacement.isEmpty ? 'Emplacement non précisé' : emplacement,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: 'Retirer 1 du stock',
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: b.enStock ? onRetirer : null,
-            ),
-            SizedBox(
-              width: 28,
-              child: FittedBox(
-                child: Text(
-                  '${b.quantite}',
-                  key: Key('quantite-${b.id}'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+        actions: [
+          IconButton(
+            tooltip: 'Retirer 1 du stock',
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: b.enStock ? onRetirer : null,
+          ),
+          SizedBox(
+            width: 28,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${b.quantite}',
+                key: Key('quantite-${b.id}'),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            IconButton(
-              tooltip: 'Ajouter 1 au stock',
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onAjouter,
-            ),
-          ],
-        ),
+          ),
+          IconButton(
+            tooltip: 'Ajouter 1 au stock',
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: onAjouter,
+          ),
+        ],
         onTap: onTap,
       ),
     );

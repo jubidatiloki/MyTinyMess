@@ -63,7 +63,7 @@ class CategoriesScreen extends StatelessWidget {
               CarteLigne(
                 key: Key('categorie-${c.nom}'),
                 leading: const IconeCarree(Icons.label_outline),
-                title: Text(c.nom, overflow: TextOverflow.ellipsis),
+                title: Text(c.nom),
                 subtitle: Text(_resume(frigo.dansCategorie(c.nom).length)),
                 onTap: () => _editer(context, c),
                 trailing: IconButton(

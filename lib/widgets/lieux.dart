@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/lieu.dart';
 import '../state/lieux_controller.dart';
+import 'page.dart';
 
 /// Ouvre la fenêtre de création ([lieu] == null) ou de modification d'un
 /// emplacement. Renvoie le lieu enregistré, ou null si on annule.
@@ -178,10 +179,7 @@ class _DialogueLieuState extends State<_DialogueLieu> {
               selectedItemBuilder: (context) => [
                 const Text('— (premier niveau)'),
                 for (final n in choix)
-                  Text(
-                    widget.lieux.chemin(n.lieu.id) ?? n.lieu.nom,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  TexteAjuste(widget.lieux.chemin(n.lieu.id) ?? n.lieu.nom),
               ],
               onChanged: (v) => setState(() => _parent = v),
             ),
@@ -212,7 +210,7 @@ class _NomIndente extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: EdgeInsets.only(left: 16.0 * noeud.profondeur),
-    child: Text(noeud.lieu.nom, overflow: TextOverflow.ellipsis),
+    child: TexteAjuste(noeud.lieu.nom),
   );
 }
 
@@ -270,10 +268,7 @@ class ChampLieu extends StatelessWidget {
                 selectedItemBuilder: (context) => [
                   Text(aucun),
                   for (final n in noeuds)
-                    Text(
-                      lieux.chemin(n.lieu.id) ?? n.lieu.nom,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    TexteAjuste(lieux.chemin(n.lieu.id) ?? n.lieu.nom),
                 ],
                 onChanged: onChanged,
               ),

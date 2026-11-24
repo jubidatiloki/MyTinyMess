@@ -201,10 +201,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
                 for (final c
                     in widget.controller.categories?.elements ??
                         const <CategorieAliment>[])
-                  DropdownMenuItem(
-                    value: c.nom,
-                    child: Text(c.nom, overflow: TextOverflow.ellipsis),
-                  ),
+                  DropdownMenuItem(value: c.nom, child: TexteAjuste(c.nom)),
               ],
               onChanged: (c) => setState(() => _categorie = c),
             ),

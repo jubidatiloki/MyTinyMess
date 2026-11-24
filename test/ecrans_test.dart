@@ -171,7 +171,15 @@ void main() {
     expect(find.byIcon(Icons.menu), findsNothing);
 
     await ouvrir(tester, Section.preferences);
-    await tester.tap(find.byKey(const Key('pref-menu-fixe')));
+    final fixe = find.byKey(const Key('pref-menu-fixe'));
+    await tester.scrollUntilVisible(
+      fixe,
+      80,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.ensureVisible(fixe);
+    await tester.pumpAndSettle();
+    await tester.tap(fixe);
     await tester.pumpAndSettle();
     // Menu replié : il revient derrière le bouton ☰.
     expect(find.byKey(const Key('menu-cave')), findsNothing);

@@ -63,7 +63,7 @@ class RecetteDetailScreen extends StatelessWidget {
             .toList();
         return Scaffold(
           appBar: AppBar(
-            title: Text(r.nom, overflow: TextOverflow.ellipsis),
+            title: TitreLong(r.nom),
             actions: [
               if (r.modifiable) ...[
                 IconButton(
