@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/aliment.dart';
 import '../../models/lieu.dart';
+import '../../models/unite.dart';
 import '../../state/categories_controller.dart';
 import '../../state/frigo_controller.dart';
 import '../../state/lieux_controller.dart';
@@ -38,6 +39,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
   late final _nom = TextEditingController(text: _a?.nom);
   late String? _categorie = _a?.categorie;
   late final _quantite = TextEditingController(text: '${_a?.quantite ?? 1}');
+  late final _unite = TextEditingController(text: _a?.unite);
   late final _contenance = TextEditingController(text: _a?.contenance);
   late final _notes = TextEditingController(text: _a?.notes);
   late DateTime? _peremption = _a?.datePeremption;
@@ -47,7 +49,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
 
   @override
   void dispose() {
-    for (final c in [_nom, _quantite, _contenance, _notes]) {
+    for (final c in [_nom, _quantite, _unite, _contenance, _notes]) {
       c.dispose();
     }
     super.dispose();
@@ -77,6 +79,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
         nom: _nom.text.trim(),
         categorie: _categorie,
         quantite: entierOuNull(_quantite.text) ?? 1,
+        unite: lireUnite(_unite.text),
         contenance: texteOuNull(_contenance.text),
         datePeremption: _peremption,
         dateAjout: _a?.dateAjout ?? widget.controller.aujourdhui,
@@ -154,15 +157,39 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
                 ecart,
                 Expanded(
                   child: TextFormField(
-                    key: const Key('champ-contenance'),
-                    controller: _contenance,
-                    decoration: const InputDecoration(
-                      labelText: 'Contenance',
-                      hintText: '500 g, 1 L…',
+                    key: const Key('champ-unite'),
+                    controller: _unite,
+                    decoration: InputDecoration(
+                      labelText: 'Unité',
+                      hintText: 'tranche…',
+                      suffixIcon: PopupMenuButton<String>(
+                        key: const Key('choix-unite'),
+                        tooltip: 'Choisir une unité',
+                        icon: const Icon(Icons.arrow_drop_down),
+                        constraints: const BoxConstraints(maxHeight: 360),
+                        onSelected: (u) => _unite.text = u,
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: '',
+                            child: Text('Sans unité'),
+                          ),
+                          for (final u in widget.controller.unites)
+                            PopupMenuItem(value: u, child: Text(u)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ],
+            ),
+            espace,
+            TextFormField(
+              key: const Key('champ-contenance'),
+              controller: _contenance,
+              decoration: const InputDecoration(
+                labelText: 'Contenance',
+                hintText: '500 g, 1 L…',
+              ),
             ),
             espace,
             InputDecorator(

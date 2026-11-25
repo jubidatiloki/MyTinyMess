@@ -110,6 +110,7 @@ class _RacineScreenState extends State<RacineScreen> {
       onGererLieux: _gererLieux,
     ),
     Section.frigo => ListeAlimentsScreen(
+      preferences: widget.preferences,
       controller: widget.frigo,
       lieux: widget.lieux,
       menu: menu,

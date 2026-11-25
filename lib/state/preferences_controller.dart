@@ -24,6 +24,7 @@ class PreferencesController extends ChangeNotifier {
   Section _ecranDemarrage = Section.accueil;
   bool _menuFixe = true;
   bool _agendaCalendrier = false;
+  bool _epuisesVisibles = true;
   Set<String> _replies = {};
 
   ChoixTheme get theme => _theme;
@@ -34,6 +35,9 @@ class PreferencesController extends ChangeNotifier {
 
   /// Agenda affiché en calendrier (mois) plutôt qu'en semaine.
   bool get agendaCalendrier => _agendaCalendrier;
+
+  /// Aliments épuisés affichés dans la liste du frigo.
+  bool get epuisesVisibles => _epuisesVisibles;
 
   /// Groupes d'emplacements repliés sur la vue d'ensemble : nom du type
   /// (« cave ») ou identifiant d'un emplacement.
@@ -53,6 +57,7 @@ class PreferencesController extends ChangeNotifier {
       );
       _menuFixe = p['menuFixe'] as bool? ?? true;
       _agendaCalendrier = p['agendaCalendrier'] as bool? ?? false;
+      _epuisesVisibles = p['epuisesVisibles'] as bool? ?? true;
       _replies = {...?(p['replies'] as List?)?.cast<String>()};
     }
     notifyListeners();
@@ -78,6 +83,11 @@ class PreferencesController extends ChangeNotifier {
     await _sauver();
   }
 
+  Future<void> changerEpuisesVisibles(bool visibles) async {
+    _epuisesVisibles = visibles;
+    await _sauver();
+  }
+
   Future<void> basculerRepli(String groupe) async {
     if (!_replies.remove(groupe)) {
       _replies.add(groupe);
@@ -98,6 +108,7 @@ class PreferencesController extends ChangeNotifier {
         'ecranDemarrage': _ecranDemarrage.name,
         'menuFixe': _menuFixe,
         'agendaCalendrier': _agendaCalendrier,
+        'epuisesVisibles': _epuisesVisibles,
         'replies': _replies.toList(),
       },
     ]);

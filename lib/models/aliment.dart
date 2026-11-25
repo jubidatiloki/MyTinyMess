@@ -1,3 +1,5 @@
+import 'unite.dart';
+
 /// Où en est un aliment par rapport à sa date de péremption.
 enum EtatPeremption {
   /// Pas de date renseignée.
@@ -16,6 +18,7 @@ class Aliment {
     required this.nom,
     this.categorie,
     this.quantite = 1,
+    this.unite,
     this.contenance,
     this.datePeremption,
     this.dateAjout,
@@ -35,6 +38,9 @@ class Aliment {
   /// Nombre d'unités (pots, paquets, pièces…). 0 = épuisé.
   final int quantite;
 
+  /// Unité de la quantité, au singulier : « tranche », « paquet »…
+  final String? unite;
+
   /// Libre : « 500 g », « 1 L », « 4 pots »…
   final String? contenance;
   final DateTime? datePeremption;
@@ -43,6 +49,12 @@ class Aliment {
   /// Emplacement (de type frigo : frigo, congélateur, placard…).
   final String? lieuId;
   final String notes;
+
+  /// « 3 tranches », ou « 3 » sans unité.
+  String get quantiteLisible => [
+    '$quantite',
+    if (unite != null) accorderUnite(unite!, quantite),
+  ].join(' ');
 
   bool get enStock => quantite > 0;
 
@@ -79,6 +91,7 @@ class Aliment {
     nom: nom,
     categorie: categorie ?? this.categorie,
     quantite: quantite ?? this.quantite,
+    unite: unite,
     contenance: contenance,
     datePeremption: datePeremption,
     dateAjout: dateAjout,
@@ -91,6 +104,7 @@ class Aliment {
     'nom': nom,
     'categorie': ?categorie,
     'quantite': quantite,
+    'unite': ?unite,
     'contenance': ?contenance,
     if (datePeremption != null)
       'datePeremption': datePeremption!.toIso8601String(),
@@ -104,6 +118,7 @@ class Aliment {
     nom: json['nom'] as String? ?? '',
     categorie: json['categorie'] as String?,
     quantite: (json['quantite'] as num?)?.toInt() ?? 1,
+    unite: json['unite'] as String?,
     contenance: json['contenance'] as String?,
     datePeremption: DateTime.tryParse(json['datePeremption'] as String? ?? ''),
     dateAjout: DateTime.tryParse(json['dateAjout'] as String? ?? ''),

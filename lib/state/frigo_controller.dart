@@ -1,5 +1,6 @@
 import '../data/depot.dart';
 import '../models/aliment.dart';
+import '../models/unite.dart';
 import 'categories_controller.dart';
 import 'collection_controller.dart';
 import 'lieux_controller.dart';
@@ -46,6 +47,20 @@ class FrigoController extends CollectionController<Aliment> {
 
   /// Nombre d'unités en stock (tous aliments confondus).
   int get nombreArticles => elements.fold(0, (s, a) => s + a.quantite);
+
+  int get nombreEpuises => elements.where((a) => !a.enStock).length;
+
+  /// Unités proposées, plus celles déjà saisies.
+  List<String> get unites {
+    final liste = [...unitesProposees];
+    for (final a in elements) {
+      final u = a.unite;
+      if (u != null && !liste.any((x) => normaliser(x) == normaliser(u))) {
+        liste.add(u);
+      }
+    }
+    return liste..sort((a, b) => normaliser(a).compareTo(normaliser(b)));
+  }
 
   /// Aliments en stock périmés ou à consommer bientôt.
   int get nombreASurveiller => elements
@@ -100,6 +115,14 @@ class FrigoController extends CollectionController<Aliment> {
   Future<void> ajouterUn(String id) => _changer(id, 1);
   Future<void> retirerUn(String id) => _changer(id, -1);
 
+  /// Nouvelle quantité (jamais négative ; 0 = épuisé).
+  Future<void> changerQuantite(String id, int quantite) async {
+    final a = parId(id);
+    if (a != null) {
+      await enregistrer(a.avecQuantite(quantite));
+    }
+  }
+
   Future<void> _changer(String id, int delta) {
     final a = parId(id);
     if (a == null) {
@@ -110,11 +133,13 @@ class FrigoController extends CollectionController<Aliment> {
 
   /// Aliments selon la recherche, le filtre et l'emplacement ; ceux qui
   /// périment le plus tôt d'abord (sans date à la fin), épuisés en dernier.
+  /// [epuises] faux : ils sont cachés (sauf avec le filtre « Épuisés »).
   List<Aliment> rechercher({
     String texte = '',
     FiltreAliments filtre = FiltreAliments.tous,
     String? lieuId,
     String? categorie,
+    bool epuises = true,
   }) {
     final t = normaliser(texte.trim());
     final dansLieu = lieuId == null
@@ -123,7 +148,7 @@ class FrigoController extends CollectionController<Aliment> {
     final resultat = elements.where((a) {
       final etat = etatDe(a);
       final garde = switch (filtre) {
-        FiltreAliments.tous => true,
+        FiltreAliments.tous => epuises || a.enStock,
         FiltreAliments.bientot => a.enStock && etat == EtatPeremption.bientot,
         FiltreAliments.perimes => a.enStock && etat == EtatPeremption.perime,
         FiltreAliments.epuises => !a.enStock,

@@ -5,11 +5,13 @@ import '../../models/lieu.dart';
 import '../../state/agenda_controller.dart';
 import '../../state/frigo_controller.dart';
 import '../../state/lieux_controller.dart';
+import '../../state/preferences_controller.dart';
 import '../../theme.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
 import 'formulaire_aliment_screen.dart';
+import 'quantite.dart';
 
 /// Couleur d'alerte selon la péremption (null = rien à signaler).
 Color? couleurPeremption(EtatPeremption e) => switch (e) {
@@ -44,6 +46,7 @@ class ListeAlimentsScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.lieux,
+    required this.preferences,
     this.menu,
     this.onGererLieux,
     this.courses,
@@ -54,6 +57,7 @@ class ListeAlimentsScreen extends StatefulWidget {
   /// Liste de courses (bouton « Ajouter à la liste de courses »).
   final CoursesController? courses;
   final LieuxController lieux;
+  final PreferencesController preferences;
   final Widget? menu;
   final VoidCallback? onGererLieux;
 
@@ -87,6 +91,22 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
     );
     if (choix != null) {
       setState(() => _categorie = choix.isEmpty ? null : choix);
+    }
+  }
+
+  Future<void> _changerQuantite(Aliment a) async {
+    final q = await demanderQuantite(context, a);
+    if (q != null) {
+      await widget.controller.changerQuantite(a.id, q);
+    }
+  }
+
+  Future<void> _supprimer(Aliment a) async {
+    if (await confirmer(
+      context,
+      'Supprimer définitivement « ${a.nom} » du frigo ?',
+    )) {
+      await widget.controller.supprimer(a.id);
     }
   }
 
@@ -137,6 +157,7 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
         listenable: Listenable.merge([
           c,
           widget.lieux,
+          widget.preferences,
           ?widget.courses,
           ?c.categories,
         ]),
@@ -147,7 +168,10 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
           final lieu = widget.lieux.parId(_lieu ?? '') == null ? null : _lieu;
           // Catégorie supprimée ou renommée entre-temps : on revient à toutes.
           final categorie = c.categories?.parNom(_categorie)?.nom;
+          final visibles = widget.preferences.epuisesVisibles;
+          final epuises = c.nombreEpuises;
           final aliments = c.rechercher(
+            epuises: visibles,
             categorie: categorie,
             texte: _recherche,
             filtre: _filtre,
@@ -202,6 +226,27 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
                   ],
                 ),
               ),
+              if (epuises > 0 && _filtre == FiltreAliments.tous)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: TextButton.icon(
+                      key: const Key('bouton-epuises'),
+                      icon: Icon(
+                        visibles
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      label: Text(
+                        '${visibles ? 'Cacher' : 'Afficher'} '
+                        'les épuisés ($epuises)',
+                      ),
+                      onPressed: () =>
+                          widget.preferences.changerEpuisesVisibles(!visibles),
+                    ),
+                  ),
+                ),
               Expanded(
                 child: aliments.isEmpty
                     ? ListeVide(
@@ -225,6 +270,8 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
                           onTap: () => _ouvrir(aliments[i]),
                           onAjouter: () => c.ajouterUn(aliments[i].id),
                           onRetirer: () => c.retirerUn(aliments[i].id),
+                          onQuantite: () => _changerQuantite(aliments[i]),
+                          onSupprimer: () => _supprimer(aliments[i]),
                           dansLesCourses:
                               widget.courses?.contient(aliments[i].nom) ??
                               false,
@@ -254,6 +301,8 @@ class _LigneAliment extends StatelessWidget {
     required this.onTap,
     required this.onAjouter,
     required this.onRetirer,
+    required this.onQuantite,
+    required this.onSupprimer,
     this.dansLesCourses = false,
     this.onCourses,
   });
@@ -267,6 +316,8 @@ class _LigneAliment extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onAjouter;
   final VoidCallback onRetirer;
+  final VoidCallback onQuantite;
+  final VoidCallback onSupprimer;
 
   @override
   Widget build(BuildContext context) {
@@ -317,19 +368,42 @@ class _LigneAliment extends StatelessWidget {
               ),
               onPressed: dansLesCourses ? null : onCourses,
             ),
-          IconButton(
-            tooltip: 'Retirer 1 du stock',
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: a.enStock ? onRetirer : null,
-          ),
-          SizedBox(
-            width: 28,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '${a.quantite}',
-                key: Key('quantite-${a.id}'),
-                style: Theme.of(context).textTheme.titleMedium,
+          if (a.enStock)
+            IconButton(
+              tooltip: 'Retirer 1 du stock',
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: onRetirer,
+            )
+          else
+            IconButton(
+              tooltip: 'Supprimer définitivement',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onSupprimer,
+            ),
+          // Toucher la quantité permet de la saisir.
+          Tooltip(
+            message: 'Modifier la quantité',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: onQuantite,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 36,
+                  maxWidth: 110,
+                  minHeight: 44,
+                ),
+                child: Center(
+                  widthFactor: 1,
+                  heightFactor: 1,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      a.quantiteLisible,
+                      key: Key('quantite-${a.id}'),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
