@@ -116,10 +116,13 @@ class FrigoController extends CollectionController<Aliment> {
   Future<void> retirerUn(String id) => _changer(id, -1);
 
   /// Nouvelle quantité (jamais négative ; 0 = épuisé).
-  Future<void> changerQuantite(String id, int quantite) async {
+  /// [niveau] : ce qu'il reste de l'unité entamée (null = pleine).
+  Future<void> changerQuantite(String id, int quantite, {int? niveau}) async {
     final a = parId(id);
     if (a != null) {
-      await enregistrer(a.avecQuantite(quantite));
+      await enregistrer(
+        a.avecQuantite(quantite, niveau: niveau, changerNiveau: true),
+      );
     }
   }
 
@@ -128,7 +131,10 @@ class FrigoController extends CollectionController<Aliment> {
     if (a == null) {
       throw StateError('Aliment introuvable : $id');
     }
-    return enregistrer(a.avecQuantite(a.quantite + delta));
+    // Une unité retirée (finie) : la suivante est pleine.
+    return enregistrer(
+      a.avecQuantite(a.quantite + delta, changerNiveau: delta < 0),
+    );
   }
 
   /// Aliments selon la recherche, le filtre et l'emplacement ; ceux qui

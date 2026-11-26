@@ -23,6 +23,7 @@ import 'courses/courses_screen.dart';
 import 'frigo/liste_aliments_screen.dart';
 import 'lieux_screen.dart';
 import 'pages_simples.dart';
+import 'nouveautes_screen.dart';
 import 'preferences_screen.dart';
 import 'repas/recettes_screen.dart';
 import 'tableau_de_bord_screen.dart';
@@ -150,6 +151,7 @@ class _RacineScreenState extends State<RacineScreen> {
       frigo: widget.frigo,
       menu: menu,
     ),
+    Section.nouveautes => NouveautesScreen(menu: menu),
     Section.aPropos => AProposScreen(menu: menu),
   };
 

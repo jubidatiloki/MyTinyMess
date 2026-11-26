@@ -19,6 +19,7 @@ class Aliment {
     this.categorie,
     this.quantite = 1,
     this.unite,
+    this.niveau,
     this.contenance,
     this.datePeremption,
     this.dateAjout,
@@ -40,6 +41,9 @@ class Aliment {
 
   /// Unité de la quantité, au singulier : « tranche », « paquet »…
   final String? unite;
+
+  /// Ce qu'il reste de l'unité entamée, en % (null = pleine).
+  final int? niveau;
 
   /// Libre : « 500 g », « 1 L », « 4 pots »…
   final String? contenance;
@@ -82,7 +86,24 @@ class Aliment {
     return j <= joursAlerte ? EtatPeremption.bientot : EtatPeremption.ok;
   }
 
-  Aliment avecQuantite(int q) => _copie(quantite: q < 0 ? 0 : q);
+  /// Nouvelle quantité ; le niveau est gardé, sauf s'il est donné.
+  Aliment avecQuantite(int q, {int? niveau, bool changerNiveau = false}) {
+    final n = q < 0 ? 0 : q;
+    final v = changerNiveau ? niveau : this.niveau;
+    return Aliment(
+      id: id,
+      nom: nom,
+      categorie: categorie,
+      quantite: n,
+      unite: unite,
+      niveau: n == 0 || v == null || v >= 100 ? null : (v < 0 ? 0 : v),
+      contenance: contenance,
+      datePeremption: datePeremption,
+      dateAjout: dateAjout,
+      lieuId: lieuId,
+      notes: notes,
+    );
+  }
 
   Aliment avecCategorie(String c) => _copie(categorie: c);
 
@@ -92,6 +113,7 @@ class Aliment {
     categorie: categorie ?? this.categorie,
     quantite: quantite ?? this.quantite,
     unite: unite,
+    niveau: niveau,
     contenance: contenance,
     datePeremption: datePeremption,
     dateAjout: dateAjout,
@@ -105,6 +127,7 @@ class Aliment {
     'categorie': ?categorie,
     'quantite': quantite,
     'unite': ?unite,
+    'niveau': ?niveau,
     'contenance': ?contenance,
     if (datePeremption != null)
       'datePeremption': datePeremption!.toIso8601String(),
@@ -119,6 +142,7 @@ class Aliment {
     categorie: json['categorie'] as String?,
     quantite: (json['quantite'] as num?)?.toInt() ?? 1,
     unite: json['unite'] as String?,
+    niveau: (json['niveau'] as num?)?.toInt(),
     contenance: json['contenance'] as String?,
     datePeremption: DateTime.tryParse(json['datePeremption'] as String? ?? ''),
     dateAjout: DateTime.tryParse(json['dateAjout'] as String? ?? ''),

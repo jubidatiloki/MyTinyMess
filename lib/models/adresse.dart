@@ -8,6 +8,7 @@ enum TypeAdresse {
   site('Site internet', 'Sites internet'),
   festival('Festival, événement', 'Festivals et événements'),
   sortie('Lieu, sortie', 'Lieux et sorties'),
+  application('Application', 'Applications'),
   autre('Autre', 'Autres');
 
   const TypeAdresse(this.libelle, this.pluriel);

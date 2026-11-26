@@ -10,6 +10,7 @@ import '../../state/lieux_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
+import 'quantite.dart';
 
 /// Ajout (aliment == null) ou modification d'un aliment du frigo.
 class FormulaireAlimentScreen extends StatefulWidget {
@@ -37,13 +38,22 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
   final _form = GlobalKey<FormState>();
   late final Aliment? _a = widget.aliment;
   late final _nom = TextEditingController(text: _a?.nom);
-  late String? _categorie = _a?.categorie;
+  late String? _categorie = _a != null
+      ? _a.categorie
+      : _seule(widget.controller.categories?.elements.map((c) => c.nom));
+  late int? _niveau = _a?.niveau;
   late final _quantite = TextEditingController(text: '${_a?.quantite ?? 1}');
   late final _unite = TextEditingController(text: _a?.unite);
   late final _contenance = TextEditingController(text: _a?.contenance);
   late final _notes = TextEditingController(text: _a?.notes);
   late DateTime? _peremption = _a?.datePeremption;
-  late String? _lieu = _a != null ? _a.lieuId : widget.lieuParDefaut;
+  late String? _lieu = _a != null
+      ? _a.lieuId
+      : widget.lieuParDefaut ?? widget.lieux.seulLieu(TypeLieu.frigo);
+
+  /// Le seul choix possible, sinon null.
+  static String? _seule(Iterable<String>? choix) =>
+      choix != null && choix.length == 1 ? choix.single : null;
 
   bool get _modification => _a != null;
 
@@ -80,6 +90,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
         categorie: _categorie,
         quantite: entierOuNull(_quantite.text) ?? 1,
         unite: lireUnite(_unite.text),
+        niveau: _niveau,
         contenance: texteOuNull(_contenance.text),
         datePeremption: _peremption,
         dateAjout: _a?.dateAjout ?? widget.controller.aujourdhui,
@@ -181,6 +192,11 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            CurseurNiveau(
+              niveau: _niveau,
+              onChanged: (v) => setState(() => _niveau = v),
             ),
             espace,
             TextFormField(

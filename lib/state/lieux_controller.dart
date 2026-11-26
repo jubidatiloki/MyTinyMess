@@ -78,6 +78,13 @@ class LieuxController extends CollectionController<Lieu> {
 
   /// Tous les lieux (ou ceux d'un [type]) dans l'ordre d'affichage : chaque
   /// lieu suivi de son contenu, avec sa profondeur.
+  /// Le seul emplacement de ce type (sous-emplacements compris), sinon null :
+  /// il est alors choisi d'office pour un nouvel objet.
+  String? seulLieu(TypeLieu type) {
+    final a = arbre(type: type);
+    return a.length == 1 ? a.single.lieu.id : null;
+  }
+
   List<NoeudLieu> arbre({TypeLieu? type}) {
     final resultat = <NoeudLieu>[];
     final vus = <String>{};

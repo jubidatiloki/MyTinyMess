@@ -17,6 +17,7 @@ IconData iconeSection(Section s) => switch (s) {
   Section.emplacements => Icons.shelves,
   Section.bazar => Icons.inventory_2_outlined,
   Section.preferences => Icons.settings_outlined,
+  Section.nouveautes => Icons.new_releases_outlined,
   Section.aPropos => Icons.info_outline,
 };
 

@@ -68,7 +68,7 @@ class _FormulaireLivreScreenState extends State<FormulaireLivreScreen> {
   late int? _note = widget.livre?.note;
   late String? _lieu = widget.livre != null
       ? widget.livre!.lieuId
-      : widget.lieuParDefaut;
+      : widget.lieuParDefaut ?? widget.lieux.seulLieu(TypeLieu.livres);
 
   bool get _modification => widget.livre != null;
 

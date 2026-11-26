@@ -50,7 +50,7 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
   late final _quantite = TextEditingController(text: '1');
   late String? _lieu = _b != null
       ? _b.emplacement.lieuId
-      : widget.lieuParDefaut;
+      : widget.lieuParDefaut ?? widget.lieux.seulLieu(TypeLieu.cave);
   late final _rangee = TextEditingController(text: _b?.emplacement.rangee);
   late final _colonne = TextEditingController(text: _b?.emplacement.colonne);
   late final _notes = TextEditingController(text: _b?.notes);

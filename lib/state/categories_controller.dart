@@ -16,6 +16,7 @@ class CategorieAliment {
     'Viandes et charcuterie',
     'Poissons',
     'Produits laitiers',
+    'Fromages',
     'Œufs',
     'Épicerie salée',
     'Épicerie sucrée',
@@ -23,13 +24,21 @@ class CategorieAliment {
     'Surgelés',
     'Condiments',
   ];
+
+  /// Catégories ajoutées après coup (0.16.0) : proposées une seule fois aux
+  /// listes déjà créées ; supprimées ensuite, elles ne reviennent pas.
+  static const ajouts = ['Fromages'];
 }
 
 /// Liste des catégories d'aliments, modifiable dans les préférences.
 class CategoriesController extends CollectionController<CategorieAliment> {
-  CategoriesController(Depot depot) : super(depot, cle);
+  CategoriesController(this._depotAjouts) : super(_depotAjouts, cle);
 
   static const cle = 'categoriesAliment';
+
+  /// Ajouts déjà faits (liste de noms).
+  static const cleAjouts = 'categoriesAjoutees';
+  final Depot _depotAjouts;
 
   @override
   CategorieAliment depuisJson(Map<String, dynamic> json) => CategorieAliment(
@@ -48,10 +57,25 @@ class CategoriesController extends CollectionController<CategorieAliment> {
   @override
   Future<void> charger() async {
     await super.charger();
+    final faits = {
+      for (final e in await _depotAjouts.lire(cleAjouts)) e['nom'] as String?,
+    };
     if (elements.isEmpty) {
       for (final nom in CategorieAliment.parDefaut) {
         await creer(nom);
       }
+    } else {
+      for (final nom in CategorieAliment.ajouts) {
+        if (!faits.contains(nom) && parNom(nom) == null) {
+          await creer(nom);
+        }
+      }
+    }
+    if (!CategorieAliment.ajouts.every(faits.contains)) {
+      await _depotAjouts.ecrire(cleAjouts, [
+        for (final nom in {...faits.nonNulls, ...CategorieAliment.ajouts})
+          {'nom': nom},
+      ]);
     }
   }
 

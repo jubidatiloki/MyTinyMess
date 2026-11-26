@@ -11,6 +11,7 @@ enum Section {
   emplacements('Emplacements'),
   bazar('Mon bazar'),
   preferences('Préférences'),
+  nouveautes('Nouveautés'),
   aPropos('À propos');
 
   const Section(this.libelle);

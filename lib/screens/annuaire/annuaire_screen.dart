@@ -18,6 +18,7 @@ IconData iconeTypeAdresse(TypeAdresse t) => switch (t) {
   TypeAdresse.site => Icons.public,
   TypeAdresse.festival => Icons.celebration_outlined,
   TypeAdresse.sortie => Icons.place_outlined,
+  TypeAdresse.application => Icons.apps,
   TypeAdresse.autre => Icons.bookmark_border,
 };
 

@@ -97,7 +97,11 @@ class _ListeAlimentsScreenState extends State<ListeAlimentsScreen> {
   Future<void> _changerQuantite(Aliment a) async {
     final q = await demanderQuantite(context, a);
     if (q != null) {
-      await widget.controller.changerQuantite(a.id, q);
+      await widget.controller.changerQuantite(
+        a.id,
+        q.quantite,
+        niveau: q.niveau,
+      );
     }
   }
 
@@ -346,6 +350,19 @@ class _LigneAliment extends StatelessWidget {
                 fontWeight: alerte != null ? FontWeight.w600 : null,
               ),
             ),
+            if (a.enStock && a.niveau != null)
+              Row(
+                children: [
+                  const Icon(Icons.opacity, size: 14),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      texteNiveau(a.niveau),
+                      key: Key('niveau-${a.id}'),
+                    ),
+                  ),
+                ],
+              ),
             if (emplacement != null)
               Row(
                 children: [

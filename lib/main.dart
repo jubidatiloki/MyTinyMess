@@ -26,6 +26,7 @@ const clesDonnees = [
   TypesBouteilleController.cle,
   FrigoController.cle,
   CategoriesController.cle,
+  CategoriesController.cleAjouts,
   RecettesController.cle,
   CoursesController.cle,
   RepasController.cle,
