@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../state/categories_controller.dart';
 import '../../state/frigo_controller.dart';
 import '../../widgets/communs.dart';
+import '../../widgets/icones_aliments.dart';
 import '../../widgets/page.dart';
 import '../repas/actions_repas.dart';
 
@@ -62,7 +63,7 @@ class CategoriesScreen extends StatelessWidget {
             for (final c in categories.elements)
               CarteLigne(
                 key: Key('categorie-${c.nom}'),
-                leading: const IconeCarree(Icons.label_outline),
+                leading: IconeCarree(iconeCategorie(c.nom)),
                 title: Text(c.nom),
                 subtitle: Text(_resume(frigo.dansCategorie(c.nom).length)),
                 onTap: () => _editer(context, c),

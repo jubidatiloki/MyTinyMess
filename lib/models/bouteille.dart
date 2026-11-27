@@ -90,6 +90,8 @@ class Bouteille {
     this.aBoireAvant,
     this.quantite = 0,
     this.notes = '',
+    this.niveau,
+    this.adresseId,
     this.mouvements = const [],
   });
 
@@ -112,6 +114,12 @@ class Bouteille {
   /// Nombre de bouteilles en stock.
   final int quantite;
   final String notes;
+
+  /// Ce qu'il reste de la bouteille entamée, en % (null = pleine).
+  final int? niveau;
+
+  /// D'où vient la bouteille : une adresse de l'annuaire.
+  final String? adresseId;
   final List<Mouvement> mouvements;
 
   bool get enStock => quantite > 0;
@@ -138,6 +146,8 @@ class Bouteille {
   Bouteille _avecMouvement(int delta, String? commentaire, DateTime? le) =>
       _copie(
         quantite: quantite + delta,
+        // Une bouteille retirée (finie) : la suivante est pleine.
+        changerNiveau: delta < 0,
         mouvements: [
           ...mouvements,
           Mouvement(
@@ -154,6 +164,7 @@ class Bouteille {
     Emplacement? emplacement,
     int? quantite,
     List<Mouvement>? mouvements,
+    bool changerNiveau = false,
   }) => Bouteille(
     id: id,
     nom: nom,
@@ -166,6 +177,8 @@ class Bouteille {
     aBoireAvant: aBoireAvant,
     quantite: quantite ?? this.quantite,
     notes: notes,
+    niveau: changerNiveau || (quantite ?? this.quantite) == 0 ? null : niveau,
+    adresseId: adresseId,
     mouvements: mouvements ?? this.mouvements,
   );
 
@@ -181,6 +194,8 @@ class Bouteille {
     if (aBoireAvant != null) 'aBoireAvant': aBoireAvant,
     'quantite': quantite,
     'notes': notes,
+    if (niveau != null) 'niveau': niveau,
+    if (adresseId != null) 'adresseId': adresseId,
     'mouvements': mouvements.map((m) => m.toJson()).toList(),
   };
 
@@ -198,6 +213,8 @@ class Bouteille {
     aBoireAvant: (json['aBoireAvant'] as num?)?.toInt(),
     quantite: (json['quantite'] as num?)?.toInt() ?? 0,
     notes: json['notes'] as String? ?? '',
+    niveau: (json['niveau'] as num?)?.toInt(),
+    adresseId: json['adresseId'] as String?,
     mouvements: [
       for (final m in (json['mouvements'] as List?) ?? const [])
         Mouvement.fromJson((m as Map).cast<String, dynamic>()),

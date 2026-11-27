@@ -43,6 +43,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
       : _seule(widget.controller.categories?.elements.map((c) => c.nom));
   late int? _niveau = _a?.niveau;
   late final _quantite = TextEditingController(text: '${_a?.quantite ?? 1}');
+  late final _variante = TextEditingController(text: _a?.variante);
   late final _unite = TextEditingController(text: _a?.unite);
   late final _contenance = TextEditingController(text: _a?.contenance);
   late final _notes = TextEditingController(text: _a?.notes);
@@ -59,7 +60,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
 
   @override
   void dispose() {
-    for (final c in [_nom, _quantite, _unite, _contenance, _notes]) {
+    for (final c in [_nom, _variante, _quantite, _unite, _contenance, _notes]) {
       c.dispose();
     }
     super.dispose();
@@ -96,6 +97,7 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
         dateAjout: _a?.dateAjout ?? widget.controller.aujourdhui,
         lieuId: _lieu,
         notes: _notes.text.trim(),
+        variante: texteOuNull(_variante.text),
       ),
     );
     if (mounted) {
@@ -147,6 +149,30 @@ class _FormulaireAlimentScreenState extends State<FormulaireAlimentScreen> {
               validator: (v) => (v == null || v.trim().isEmpty)
                   ? 'Le nom est obligatoire'
                   : null,
+              onChanged: (_) => setState(() {}),
+            ),
+            espace,
+            TextFormField(
+              key: const Key('champ-variante'),
+              controller: _variante,
+              decoration: InputDecoration(
+                labelText: 'Variante',
+                hintText: 'grenailles, demi-sel, bio…',
+                suffixIcon: widget.controller.variantesDe(_nom.text).isEmpty
+                    ? null
+                    : PopupMenuButton<String>(
+                        key: const Key('choix-variante'),
+                        tooltip: 'Variantes déjà saisies',
+                        icon: const Icon(Icons.arrow_drop_down),
+                        onSelected: (v) => _variante.text = v,
+                        itemBuilder: (_) => [
+                          for (final v in widget.controller.variantesDe(
+                            _nom.text,
+                          ))
+                            PopupMenuItem(value: v, child: Text(v)),
+                        ],
+                      ),
+              ),
             ),
             espace,
             Row(

@@ -34,11 +34,19 @@ class _FormulaireRecetteScreenState extends State<FormulaireRecetteScreen> {
     text: _r?.ingredients.map((i) => i.libelle).join('\n'),
   );
   late final _etapes = TextEditingController(text: _r?.etapes);
+  late final _conseils = TextEditingController(text: _r?.conseils);
   late final Set<StyleRecette> _styles = {...?_r?.styles};
 
   @override
   void dispose() {
-    for (final c in [_nom, _minutes, _personnes, _ingredients, _etapes]) {
+    for (final c in [
+      _nom,
+      _minutes,
+      _personnes,
+      _ingredients,
+      _etapes,
+      _conseils,
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -58,6 +66,7 @@ class _FormulaireRecetteScreenState extends State<FormulaireRecetteScreen> {
             if (ligne.trim().isNotEmpty) Ingredient.depuisLigne(ligne),
         ],
         etapes: _etapes.text.trim(),
+        conseils: _conseils.text.trim(),
         minutes: entierOuNull(_minutes.text),
         personnes: entierOuNull(_personnes.text),
         source: SourceRecette.perso,
@@ -146,6 +155,18 @@ class _FormulaireRecetteScreenState extends State<FormulaireRecetteScreen> {
               maxLines: 20,
               decoration: const InputDecoration(
                 labelText: 'Préparation (une étape par ligne)',
+                alignLabelWithHint: true,
+              ),
+            ),
+            espace,
+            TextFormField(
+              key: const Key('champ-conseils'),
+              controller: _conseils,
+              minLines: 2,
+              maxLines: 10,
+              decoration: const InputDecoration(
+                labelText: 'Conseils',
+                hintText: 'Préparation, service, dégustation, accords…',
                 alignLabelWithHint: true,
               ),
             ),

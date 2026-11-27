@@ -4,7 +4,9 @@ enum StyleRecette {
   light('Light'),
   rapide('Rapide'),
   vegetarien('Végétarien'),
-  economique('Économique');
+  economique('Économique'),
+  aperitif('Apéritif'),
+  boisson('Boisson');
 
   const StyleRecette(this.libelle);
   final String libelle;
@@ -81,6 +83,7 @@ class Recette {
     this.styles = const {},
     this.ingredients = const [],
     this.etapes = '',
+    this.conseils = '',
     this.minutes,
     this.personnes,
     this.source = SourceRecette.perso,
@@ -94,6 +97,9 @@ class Recette {
 
   /// Préparation, une étape par ligne.
   final String etapes;
+
+  /// Conseils de préparation ou de dégustation (texte libre).
+  final String conseils;
   final int? minutes;
   final int? personnes;
   final SourceRecette source;
@@ -109,6 +115,7 @@ class Recette {
     styles: styles,
     ingredients: ingredients,
     etapes: etapes,
+    conseils: conseils,
     minutes: minutes,
     personnes: personnes,
     source: source ?? this.source,
@@ -121,6 +128,7 @@ class Recette {
     'styles': [for (final s in styles) s.name],
     'ingredients': [for (final i in ingredients) i.toJson()],
     'etapes': etapes,
+    if (conseils.isNotEmpty) 'conseils': conseils,
     'minutes': ?minutes,
     'personnes': ?personnes,
     'source': source.name,
@@ -142,6 +150,7 @@ class Recette {
         Ingredient.fromJson((i as Map).cast<String, dynamic>()),
     ],
     etapes: json['etapes'] as String? ?? '',
+    conseils: json['conseils'] as String? ?? '',
     minutes: (json['minutes'] as num?)?.toInt(),
     personnes: (json['personnes'] as num?)?.toInt(),
     source:

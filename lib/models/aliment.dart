@@ -25,6 +25,7 @@ class Aliment {
     this.dateAjout,
     this.lieuId,
     this.notes = '',
+    this.variante,
   });
 
   /// Nombre de jours avant la péremption à partir duquel on alerte.
@@ -53,6 +54,12 @@ class Aliment {
   /// Emplacement (de type frigo : frigo, congélateur, placard…).
   final String? lieuId;
   final String notes;
+
+  /// Variante : « grenailles » pour des pommes de terre, « demi-sel »…
+  final String? variante;
+
+  /// « Pommes de terre · grenailles ».
+  String get nomComplet => [nom, ?variante].join(' · ');
 
   /// « 3 tranches », ou « 3 » sans unité.
   String get quantiteLisible => [
@@ -102,6 +109,7 @@ class Aliment {
       dateAjout: dateAjout,
       lieuId: lieuId,
       notes: notes,
+      variante: variante,
     );
   }
 
@@ -119,6 +127,7 @@ class Aliment {
     dateAjout: dateAjout,
     lieuId: lieuId,
     notes: notes,
+    variante: variante,
   );
 
   Map<String, dynamic> toJson() => {
@@ -134,6 +143,7 @@ class Aliment {
     if (dateAjout != null) 'dateAjout': dateAjout!.toIso8601String(),
     'lieuId': ?lieuId,
     'notes': notes,
+    'variante': ?variante,
   };
 
   factory Aliment.fromJson(Map<String, dynamic> json) => Aliment(
@@ -148,5 +158,6 @@ class Aliment {
     dateAjout: DateTime.tryParse(json['dateAjout'] as String? ?? ''),
     lieuId: json['lieuId'] as String?,
     notes: json['notes'] as String? ?? '',
+    variante: json['variante'] as String?,
   );
 }

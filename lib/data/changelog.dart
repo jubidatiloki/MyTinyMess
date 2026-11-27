@@ -35,6 +35,35 @@ const _c = TypeNouveaute.correction;
 
 /// La plus récente en premier.
 const historiqueVersions = [
+  VersionApp('0.17.0', '27/11/2026', [
+    Nouveaute(
+      _a,
+      'Frigo : variante d\'un aliment (pommes de terre grenailles, '
+      'rissolées…), proposée ensuite pour le même aliment.',
+    ),
+    Nouveaute(_a, 'Frigo : icône des aliments selon leur catégorie.'),
+    Nouveaute(
+      _a,
+      'Cave : curseur « reste environ … % » pour une bouteille entamée.',
+    ),
+    Nouveaute(
+      _a,
+      'Cave : d\'où vient une bouteille, choisie dans l\'annuaire (ou créée '
+      'sur le moment).',
+    ),
+    Nouveaute(
+      _a,
+      'Recettes : styles « Apéritif » et « Boisson », avec 8 nouvelles '
+      'recettes (72 au total).',
+    ),
+    Nouveaute(_a, 'Recettes : conseils de préparation ou de dégustation.'),
+    Nouveaute(
+      _m,
+      'Repas & recettes : l\'en-tête donne le nombre de recettes selon '
+      'l\'onglet et les filtres.',
+    ),
+    Nouveaute(_m, 'Catégories d\'aliments triées par ordre alphabétique.'),
+  ]),
   VersionApp('0.16.0', '26/11/2026', [
     Nouveaute(_a, 'Écran « Nouveautés » : les évolutions de chaque version.'),
     Nouveaute(

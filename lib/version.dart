@@ -1,2 +1,2 @@
 /// Version de l'application (à garder en phase avec `version:` de pubspec.yaml).
-const kVersionApp = '0.16.0';
+const kVersionApp = '0.17.0';

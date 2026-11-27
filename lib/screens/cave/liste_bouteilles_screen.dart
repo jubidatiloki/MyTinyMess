@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../models/lieu.dart';
+import '../../data/liens.dart';
+import '../../data/partage_adresse.dart';
 import '../../models/bouteille.dart';
+import '../../state/annuaire_controller.dart';
 import '../../state/cave_controller.dart';
 import '../../state/lieux_controller.dart';
 import '../../state/types_bouteille_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
+import '../frigo/quantite.dart';
 import 'formulaire_bouteille_screen.dart';
 import 'types_bouteille_screen.dart';
 
@@ -19,9 +23,17 @@ class ListeBouteillesScreen extends StatefulWidget {
     required this.types,
     this.menu,
     this.onGererLieux,
+    this.annuaire,
+    this.ouvrirLien,
+    this.partager,
   });
 
   final CaveController controller;
+
+  /// Annuaire : d'où viennent les bouteilles.
+  final AnnuaireController? annuaire;
+  final OuvrirLien? ouvrirLien;
+  final Partager? partager;
 
   /// Emplacements personnalisés (communs avec la bibliothèque).
   final LieuxController lieux;
@@ -55,6 +67,9 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
           types: widget.types,
           bouteille: bouteille,
           lieuParDefaut: _lieu,
+          annuaire: widget.annuaire,
+          ouvrirLien: widget.ouvrirLien,
+          partager: widget.partager,
         ),
       ),
     );
@@ -175,6 +190,9 @@ class _ListeBouteillesScreenState extends State<ListeBouteillesScreen> {
                         itemBuilder: (context, i) => _LigneBouteille(
                           bouteille: bouteilles[i],
                           couleur: widget.types.couleurDe(bouteilles[i].typeId),
+                          origine: widget.annuaire
+                              ?.parId(bouteilles[i].adresseId ?? '')
+                              ?.nom,
                           emplacement: widget.controller.emplacementDe(
                             bouteilles[i],
                           ),
@@ -203,6 +221,7 @@ class _LigneBouteille extends StatelessWidget {
     required this.bouteille,
     required this.couleur,
     required this.emplacement,
+    this.origine,
     required this.onTap,
     required this.onAjouter,
     required this.onRetirer,
@@ -211,6 +230,9 @@ class _LigneBouteille extends StatelessWidget {
   final Bouteille bouteille;
   final Color couleur;
   final String emplacement;
+
+  /// Nom de l'adresse d'où vient la bouteille.
+  final String? origine;
   final VoidCallback onTap;
   final VoidCallback onAjouter;
   final VoidCallback onRetirer;
@@ -224,15 +246,43 @@ class _LigneBouteille extends StatelessWidget {
       child: CarteLigne(
         leading: IconeCarree(Icons.wine_bar, couleur: couleur),
         title: Text(titre),
-        subtitle: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.place_outlined, size: 14),
-            const SizedBox(width: 2),
-            Flexible(
-              child: Text(
-                emplacement.isEmpty ? 'Emplacement non précisé' : emplacement,
-              ),
+            Row(
+              children: [
+                const Icon(Icons.place_outlined, size: 14),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    emplacement.isEmpty
+                        ? 'Emplacement non précisé'
+                        : emplacement,
+                  ),
+                ),
+              ],
             ),
+            if (b.enStock && b.niveau != null)
+              Row(
+                children: [
+                  const Icon(Icons.opacity, size: 14),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      texteNiveau(b.niveau),
+                      key: Key('niveau-${b.id}'),
+                    ),
+                  ),
+                ],
+              ),
+            if (origine != null)
+              Row(
+                children: [
+                  const Icon(Icons.storefront_outlined, size: 14),
+                  const SizedBox(width: 2),
+                  Flexible(child: Text(origine!)),
+                ],
+              ),
           ],
         ),
         actions: [

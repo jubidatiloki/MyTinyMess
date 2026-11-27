@@ -53,6 +53,12 @@ class CategoriesController extends CollectionController<CategorieAliment> {
   @override
   String idDe(CategorieAliment element) => element.id;
 
+  /// Par ordre alphabétique (accents et majuscules ignorés).
+  @override
+  List<CategorieAliment> get elements =>
+      [...super.elements]
+        ..sort((a, b) => normaliser(a.nom).compareTo(normaliser(b.nom)));
+
   /// Au premier lancement (liste vide), crée les catégories par défaut.
   @override
   Future<void> charger() async {

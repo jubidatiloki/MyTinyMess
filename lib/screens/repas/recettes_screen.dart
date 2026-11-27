@@ -8,52 +8,135 @@ import '../../widgets/page.dart';
 import 'formulaire_recette_screen.dart';
 import 'recette_detail_screen.dart';
 
+/// « 1 recette », « 12 recettes ».
+String _nombre(int n, String mot) => '$n $mot${n > 1 ? 's' : ''}';
+
 /// Rubrique « Repas & recettes » : propositions selon le frigo, carnet de
-/// recettes (intégrées + personnelles) et recherche en ligne.
-class RecettesScreen extends StatelessWidget {
+/// recettes (intégrées + personnelles) et recherche en ligne. L'en-tête
+/// donne le nombre de recettes de l'onglet affiché, selon ses filtres.
+class RecettesScreen extends StatefulWidget {
   const RecettesScreen({super.key, required this.cuisine, this.menu});
 
   final Cuisine cuisine;
   final Widget? menu;
 
   @override
+  State<RecettesScreen> createState() => _RecettesScreenState();
+}
+
+class _RecettesScreenState extends State<RecettesScreen>
+    with SingleTickerProviderStateMixin {
+  late final _onglets = TabController(
+    length: widget.cuisine.enLigne == null ? 2 : 3,
+    vsync: this,
+  );
+  StyleRecette? _stylePropositions;
+  StyleRecette? _styleCarnet;
+  String _texteCarnet = '';
+
+  /// Nombre de résultats de la recherche en ligne (null = pas de recherche).
+  final _resultatsEnLigne = ValueNotifier<int?>(null);
+
+  @override
+  void dispose() {
+    _onglets.dispose();
+    _resultatsEnLigne.dispose();
+    super.dispose();
+  }
+
+  String _sousTitre() {
+    final c = widget.cuisine;
+    switch (_onglets.index) {
+      case 0:
+        return [
+          _nombre(
+            c.recettes
+                .suggestions(c.frigo.elements, style: _stylePropositions)
+                .length,
+            'proposition',
+          ),
+          ?_stylePropositions?.libelle,
+        ].join(' · ');
+      case 1:
+        final texte = _texteCarnet.trim();
+        return [
+          _nombre(
+            c.recettes.rechercher(texte: texte, style: _styleCarnet).length,
+            'recette',
+          ),
+          ?_styleCarnet?.libelle,
+          if (texte.isNotEmpty) '« $texte »',
+        ].join(' · ');
+      default:
+        final n = _resultatsEnLigne.value;
+        return n == null
+            ? 'Recherche en ligne (en anglais)'
+            : _nombre(n, 'résultat');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: cuisine.enLigne == null ? 2 : 3,
-      child: PageOdv(
-        titre: 'Repas & recettes',
-        sousTitre: 'Idées selon le frigo, carnet et recherche en ligne',
-        menu: menu,
-        bouton: BoutonAjout(
-          libelle: 'Ajouter une recette',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) =>
-                  FormulaireRecetteScreen(recettes: cuisine.recettes),
-            ),
+    final cuisine = widget.cuisine;
+    return PageOdv(
+      titre: 'Repas & recettes',
+      titreWidget: ListenableBuilder(
+        listenable: Listenable.merge([
+          cuisine.tout,
+          _onglets,
+          _resultatsEnLigne,
+        ]),
+        builder: (context, _) => TitrePage(
+          key: const Key('entete-recettes'),
+          titre: 'Repas & recettes',
+          sousTitre: _sousTitre(),
+        ),
+      ),
+      menu: widget.menu,
+      bouton: BoutonAjout(
+        libelle: 'Ajouter une recette',
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => FormulaireRecetteScreen(recettes: cuisine.recettes),
           ),
         ),
-        corps: Column(
-          children: [
-            TabBar(
-              tabs: [
-                const Tab(text: 'Propositions'),
-                const Tab(text: 'Carnet'),
-                if (cuisine.enLigne != null) const Tab(text: 'En ligne'),
+      ),
+      corps: Column(
+        children: [
+          TabBar(
+            controller: _onglets,
+            tabs: [
+              const Tab(text: 'Propositions'),
+              const Tab(text: 'Carnet'),
+              if (cuisine.enLigne != null) const Tab(text: 'En ligne'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _onglets,
+              children: [
+                _Propositions(
+                  cuisine: cuisine,
+                  style: _stylePropositions,
+                  onStyle: (s) => setState(() => _stylePropositions = s),
+                ),
+                _Carnet(
+                  cuisine: cuisine,
+                  style: _styleCarnet,
+                  texte: _texteCarnet,
+                  onStyle: (s) => setState(() => _styleCarnet = s),
+                  onTexte: (t) => setState(() => _texteCarnet = t),
+                ),
+                if (cuisine.enLigne != null)
+                  _EnLigne(
+                    cuisine: cuisine,
+                    onResultats: (n) => _resultatsEnLigne.value = n,
+                  ),
               ],
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _Propositions(cuisine: cuisine),
-                  _Carnet(cuisine: cuisine),
-                  if (cuisine.enLigne != null) _EnLigne(cuisine: cuisine),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -93,6 +176,7 @@ class _ChoixStyle extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 6),
             child: ChoiceChip(
+              key: Key('style-${s.name}'),
               label: Text(s.libelle),
               selected: style == s,
               onSelected: (_) => onChanged(s),
@@ -103,33 +187,29 @@ class _ChoixStyle extends StatelessWidget {
   );
 }
 
-class _Propositions extends StatefulWidget {
-  const _Propositions({required this.cuisine});
+class _Propositions extends StatelessWidget {
+  const _Propositions({
+    required this.cuisine,
+    required this.style,
+    required this.onStyle,
+  });
 
   final Cuisine cuisine;
-
-  @override
-  State<_Propositions> createState() => _PropositionsState();
-}
-
-class _PropositionsState extends State<_Propositions> {
-  StyleRecette? _style;
+  final StyleRecette? style;
+  final ValueChanged<StyleRecette?> onStyle;
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.cuisine;
+    final c = cuisine;
     final p = PaletteOdv.de(context);
     return ListenableBuilder(
       listenable: c.tout,
       builder: (context, _) {
-        final liste = c.recettes.suggestions(c.frigo.elements, style: _style);
+        final liste = c.recettes.suggestions(c.frigo.elements, style: style);
         return Column(
           children: [
             const SizedBox(height: 8),
-            _ChoixStyle(
-              style: _style,
-              onChanged: (s) => setState(() => _style = s),
-            ),
+            _ChoixStyle(style: style, onChanged: onStyle),
             Expanded(
               child: liste.isEmpty
                   ? ListeVide(
@@ -181,39 +261,36 @@ class _PropositionsState extends State<_Propositions> {
   }
 }
 
-class _Carnet extends StatefulWidget {
-  const _Carnet({required this.cuisine});
+class _Carnet extends StatelessWidget {
+  const _Carnet({
+    required this.cuisine,
+    required this.style,
+    required this.texte,
+    required this.onStyle,
+    required this.onTexte,
+  });
 
   final Cuisine cuisine;
-
-  @override
-  State<_Carnet> createState() => _CarnetState();
-}
-
-class _CarnetState extends State<_Carnet> {
-  String _texte = '';
-  StyleRecette? _style;
+  final String texte;
+  final StyleRecette? style;
+  final ValueChanged<StyleRecette?> onStyle;
+  final ValueChanged<String> onTexte;
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.cuisine;
-    return ListenableBuilder(
-      listenable: c.recettes,
-      builder: (context, _) {
-        final liste = c.recettes.rechercher(texte: _texte, style: _style);
-        return Column(
-          children: [
-            const SizedBox(height: 8),
-            ChampRecherche(
-              indice: 'Nom ou ingrédient…',
-              onChanged: (t) => setState(() => _texte = t),
-            ),
-            _ChoixStyle(
-              style: _style,
-              onChanged: (s) => setState(() => _style = s),
-            ),
-            Expanded(
-              child: ListView.builder(
+    final c = cuisine;
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        // Hors du ListenableBuilder : le champ garde le texte saisi.
+        ChampRecherche(indice: 'Nom ou ingrédient…', onChanged: onTexte),
+        _ChoixStyle(style: style, onChanged: onStyle),
+        Expanded(
+          child: ListenableBuilder(
+            listenable: c.recettes,
+            builder: (context, _) {
+              final liste = c.recettes.rechercher(texte: texte, style: style);
+              return ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
                 itemCount: liste.length,
                 itemBuilder: (context, i) {
@@ -234,29 +311,34 @@ class _CarnetState extends State<_Carnet> {
                     onTap: () => ouvrirRecette(context, c, r),
                   );
                 },
-              ),
-            ),
-          ],
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _EnLigne extends StatefulWidget {
-  const _EnLigne({required this.cuisine});
+  const _EnLigne({required this.cuisine, required this.onResultats});
 
   final Cuisine cuisine;
+  final ValueChanged<int?> onResultats;
 
   @override
   State<_EnLigne> createState() => _EnLigneState();
 }
 
-class _EnLigneState extends State<_EnLigne> {
+class _EnLigneState extends State<_EnLigne> with AutomaticKeepAliveClientMixin {
   final _texte = TextEditingController();
   List<Recette>? _resultats;
   String? _erreur;
   bool _enCours = false;
+
+  // Les résultats restent quand on change d'onglet (et l'en-tête aussi).
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -277,10 +359,12 @@ class _EnLigneState extends State<_EnLigne> {
       final r = await widget.cuisine.enLigne!.chercher(t);
       if (mounted) {
         setState(() => _resultats = r);
+        widget.onResultats(r.length);
       }
     } catch (_) {
       if (mounted) {
         setState(() => _erreur = 'Recherche impossible (pas de connexion ?).');
+        widget.onResultats(null);
       }
     } finally {
       if (mounted) {
@@ -291,6 +375,7 @@ class _EnLigneState extends State<_EnLigne> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final r = _resultats;
     return Column(
       children: [

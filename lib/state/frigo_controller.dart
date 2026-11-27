@@ -62,6 +62,20 @@ class FrigoController extends CollectionController<Aliment> {
     return liste..sort((a, b) => normaliser(a).compareTo(normaliser(b)));
   }
 
+  /// Variantes déjà saisies pour un aliment de ce nom (pour les proposer).
+  List<String> variantesDe(String nom) {
+    final n = normaliser(nom.trim());
+    final vues = <String, String>{};
+    for (final a in elements) {
+      final v = a.variante;
+      if (v != null && n.isNotEmpty && normaliser(a.nom) == n) {
+        vues.putIfAbsent(normaliser(v), () => v);
+      }
+    }
+    return vues.values.toList()
+      ..sort((a, b) => normaliser(a).compareTo(normaliser(b)));
+  }
+
   /// Aliments en stock périmés ou à consommer bientôt.
   int get nombreASurveiller => elements
       .where(
@@ -177,6 +191,7 @@ class FrigoController extends CollectionController<Aliment> {
           a.nom,
           a.categorie ?? '',
           a.contenance ?? '',
+          a.variante ?? '',
           emplacementDe(a) ?? '',
         ].join(' '),
       ).contains(t);

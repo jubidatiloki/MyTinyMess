@@ -109,6 +109,9 @@ class _RacineScreenState extends State<RacineScreen> {
       types: widget.types,
       menu: menu,
       onGererLieux: _gererLieux,
+      annuaire: widget.annuaire,
+      ouvrirLien: widget.ouvrirLien,
+      partager: widget.partager,
     ),
     Section.frigo => ListeAlimentsScreen(
       preferences: widget.preferences,

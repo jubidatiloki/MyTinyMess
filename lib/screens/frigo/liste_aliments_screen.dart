@@ -8,6 +8,7 @@ import '../../state/lieux_controller.dart';
 import '../../state/preferences_controller.dart';
 import '../../theme.dart';
 import '../../widgets/communs.dart';
+import '../../widgets/icones_aliments.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
 import 'formulaire_aliment_screen.dart';
@@ -329,13 +330,13 @@ class _LigneAliment extends StatelessWidget {
     final p = PaletteOdv.de(context);
     final alerte = a.enStock ? couleurPeremption(etat) : null;
     final titre = [
-      a.nom,
+      a.nomComplet,
       if (a.contenance != null) '(${a.contenance})',
     ].join(' ');
     return Opacity(
       opacity: a.enStock ? 1 : 0.5,
       child: CarteLigne(
-        leading: IconeCarree(Icons.kitchen_outlined, couleur: alerte),
+        leading: IconeCarree(iconeCategorie(a.categorie), couleur: alerte),
         title: Text(titre),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

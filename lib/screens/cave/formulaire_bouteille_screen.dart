@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/lieu.dart';
+import '../../data/liens.dart';
+import '../../data/partage_adresse.dart';
 import '../../models/bouteille.dart';
+import '../../state/annuaire_controller.dart';
 import '../../state/cave_controller.dart';
 import '../../state/lieux_controller.dart';
 import '../../state/types_bouteille_controller.dart';
 import '../../widgets/communs.dart';
 import '../../widgets/lieux.dart';
 import '../../widgets/page.dart';
+import '../annuaire/choix_adresse.dart';
+import '../frigo/quantite.dart';
 
 /// Ajout (bouteille == null) ou modification d'une bouteille de la cave.
 class FormulaireBouteilleScreen extends StatefulWidget {
@@ -19,12 +24,20 @@ class FormulaireBouteilleScreen extends StatefulWidget {
     required this.types,
     this.bouteille,
     this.lieuParDefaut,
+    this.annuaire,
+    this.ouvrirLien,
+    this.partager,
   });
 
   final CaveController controller;
   final LieuxController lieux;
   final TypesBouteilleController types;
   final Bouteille? bouteille;
+
+  /// Annuaire, pour dire d'où vient la bouteille (sinon, pas de champ).
+  final AnnuaireController? annuaire;
+  final OuvrirLien? ouvrirLien;
+  final Partager? partager;
 
   /// Emplacement proposé pour une nouvelle bouteille (filtre de la liste).
   final String? lieuParDefaut;
@@ -54,6 +67,8 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
   late final _rangee = TextEditingController(text: _b?.emplacement.rangee);
   late final _colonne = TextEditingController(text: _b?.emplacement.colonne);
   late final _notes = TextEditingController(text: _b?.notes);
+  late int? _niveau = _b?.niveau;
+  late String? _adresse = _b?.adresseId;
   late String? _typeId =
       _b?.typeId ??
       (widget.types.elements.isEmpty ? null : widget.types.elements.first.id);
@@ -105,6 +120,8 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
         colonne: texteOuNull(_colonne.text),
       ),
       notes: _notes.text.trim(),
+      niveau: _niveau,
+      adresseId: _adresse,
       // En modification, le stock ne change que par les boutons + / -.
       quantite: _b?.quantite ?? 0,
       mouvements: _b?.mouvements ?? const [],
@@ -254,6 +271,23 @@ class _FormulaireBouteilleScreenState extends State<FormulaireBouteilleScreen> {
                   final n = entierOuNull(v ?? '');
                   return (n == null || n < 0) ? 'Nombre positif attendu' : null;
                 },
+              ),
+            ],
+            if (_modification && b!.enStock) ...[
+              espace,
+              CurseurNiveau(
+                niveau: _niveau,
+                onChanged: (v) => setState(() => _niveau = v),
+              ),
+            ],
+            if (widget.annuaire != null) ...[
+              espace,
+              ChampAdresse(
+                annuaire: widget.annuaire!,
+                valeur: _adresse,
+                ouvrirLien: widget.ouvrirLien,
+                partager: widget.partager,
+                onChanged: (v) => setState(() => _adresse = v),
               ),
             ],
             const SizedBox(height: 24),

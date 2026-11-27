@@ -188,6 +188,19 @@ class RecetteDetailScreen extends StatelessWidget {
                   ),
                 ),
               ],
+              if (r.conseils.trim().isNotEmpty) ...[
+                const TitreSection('Conseils'),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.tips_and_updates_outlined),
+                    title: Text(
+                      r.conseils.trim(),
+                      key: const Key('conseils-recette'),
+                      style: const TextStyle(height: 1.4),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
